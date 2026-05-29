@@ -36,7 +36,8 @@ def main() -> None:
     # ── 1. Fetch today's prices ──────────────────────────────────────────────
     logger.info("Step 1/4 — Fetching today's prices (%s)...", today)
     for ticker in FTSE_STOCKS:
-        df = fetch_prices(ticker, today - timedelta(days=1), today)
+        # end=today+1 because yfinance's end date is exclusive — without +1, today is never fetched
+        df = fetch_prices(ticker, today - timedelta(days=1), today + timedelta(days=1))
         saved = save_prices(db, ticker, df)
         if saved:
             logger.info("  %s: %d new row(s)", ticker, saved)
