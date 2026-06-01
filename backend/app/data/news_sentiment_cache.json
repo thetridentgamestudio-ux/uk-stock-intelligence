@@ -1,0 +1,128 @@
+{
+  "BUT.L": {
+    "score": -0.7581,
+    "label": "negative",
+    "count": 14,
+    "headlines": [
+      "Wise under investigation over money laundering control concerns",
+      "Put a \u00a35 deposit on vapes to stop fires, say waste companies",
+      "US government prepares to print $250 note featuring Trump's face",
+      "The rise of the fruit that tastes like custard",
+      "Robo-top: The machines that could make your next t-shirt"
+    ],
+    "updated": "2026-06-01"
+  },
+  "COST.L": {
+    "score": -0.4056,
+    "label": "negative",
+    "count": 8,
+    "headlines": [
+      "The \u00a35 coffee that tells a story of global economic turmoil",
+      "'Six eggs used to be \u00a31' - why everyday essentials cost so much more now",
+      "Home care workers face fuel cost spike fears",
+      "Caring for ageing parents is becoming a financial nightmare in the US. Here\u2019s what we can do | Courtney E Martin",
+      "Local government could also do more to help with the cost of living | Letter"
+    ],
+    "updated": "2026-06-01"
+  },
+  "DOM.L": {
+    "score": -0.965,
+    "label": "negative",
+    "count": 1,
+    "headlines": [
+      "M&S chief\u2019s pay slashed by \u00a33m after cyberattack turmoil"
+    ],
+    "updated": "2026-06-01"
+  },
+  "EZJ.L": {
+    "score": 0.0,
+    "label": "neutral",
+    "count": 2,
+    "headlines": [
+      "EasyJet says possible takeover bid 'opportunistic'",
+      "EasyJet says US takeover bid would be \u2018highly opportunistic\u2019"
+    ],
+    "updated": "2026-06-01"
+  },
+  "FOUR.L": {
+    "score": -0.7957,
+    "label": "negative",
+    "count": 3,
+    "headlines": [
+      "Four in 10 struggle to access mobile signal on the move in the UK",
+      "Deloitte UK appoints first chief AI officer in drive for \u2018AI-enabled\u2019 services",
+      "UK manufacturing survives Iran war impact"
+    ],
+    "updated": "2026-06-01"
+  },
+  "GEN.L": {
+    "score": 0.0,
+    "label": "neutral",
+    "count": 3,
+    "headlines": [
+      "The \u00a35 coffee that tells a story of global economic turmoil",
+      "Many of us aren\u2019t saving enough for retirement. But there are ways to fix this",
+      "To YouTube and beyond: how online gen Z directors stormed Hollywood"
+    ],
+    "updated": "2026-06-01"
+  },
+  "HAS.L": {
+    "score": -0.1706,
+    "label": "negative",
+    "count": 29,
+    "headlines": [
+      "UK banks blocked from cyber AI tool Mythos get offer from rival OpenAI",
+      "Ferrari wanted to take on Chinese EVs with the Luce - then the backlash started",
+      "'I've applied for more than 400 roles' - how young people are facing the job shortage",
+      "Love factually: Dating start-ups promise to cut the cheats",
+      "Rise in solar panel sales as people 'want to save money'"
+    ],
+    "updated": "2026-06-01"
+  },
+  "INF.L": {
+    "score": 0.0,
+    "label": "neutral",
+    "count": 1,
+    "headlines": [
+      "Abusive passengers could be blacklisted from all airlines under new proposal"
+    ],
+    "updated": "2026-06-01"
+  },
+  "PINT.L": {
+    "score": 0.0,
+    "label": "neutral",
+    "count": 1,
+    "headlines": [
+      "Why is Lidl opening a pub?"
+    ],
+    "updated": "2026-06-01"
+  },
+  "SHAW.L": {
+    "score": 0.5904,
+    "label": "positive",
+    "count": 2,
+    "headlines": [
+      "Local government could also do more to help with the cost of living | Letter",
+      "North Highland Names Anthony Shaw Global Chief Executive Officer"
+    ],
+    "updated": "2026-06-01"
+  },
+  "SVS.L": {
+    "score": -0.9677,
+    "label": "negative",
+    "count": 1,
+    "headlines": [
+      "UK house prices fall for first time this year amid rising mortgage rates"
+    ],
+    "updated": "2026-06-01"
+  },
+  "WIZZ.L": {
+    "score": 0.0,
+    "label": "neutral",
+    "count": 1,
+    "headlines": [
+      "Arrive three hours before flight home, airline boss tells UK holidaymakers"
+    ],
+    "updated": "2026-06-01"
+  }
+}

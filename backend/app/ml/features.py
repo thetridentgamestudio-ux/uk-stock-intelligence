@@ -204,9 +204,9 @@ def compute_features(
     df["volume_trend_3d"] = vol_recent / vol_prior.replace(0, np.nan)
 
     # ── Signal 3: Breakout ────────────────────────────────────────────────────
-
-    high_20d  = close.rolling(20).max().shift(1)
-    high_252d = close.rolling(252).max().shift(1)
+    # Use intraday highs (not closing highs) — standard breakout threshold
+    high_20d  = high.rolling(20).max().shift(1)   # exclude today
+    high_252d = high.rolling(252).max().shift(1)
     df["dist_from_20d_high"] = (close - high_20d)  / high_20d.replace(0, np.nan)
     df["dist_from_52w_high"] = (close - high_252d) / high_252d.replace(0, np.nan)
 

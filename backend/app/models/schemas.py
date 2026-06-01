@@ -22,6 +22,10 @@ class PredictionOut(BaseModel):
     cs_rank_1m: Optional[float] = None
     market_regime: Optional[str] = None
     earnings_flag: Optional[str] = None
+    sector_rel_5d: Optional[float] = None
+    sector_rank_1m: Optional[float] = None
+    news_flag: Optional[str] = None
+    return_20d: Optional[float] = None
     explanation: Optional[str] = None
 
 

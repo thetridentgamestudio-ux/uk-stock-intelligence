@@ -1,6 +1,10 @@
 from datetime import date
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
+
+logger = logging.getLogger(__name__)
 from sqlalchemy.orm import Session
 
 from ...database import get_db
@@ -39,7 +43,11 @@ def market_sentiment_endpoint():
     Returns current market regime based on VIX + FTSE momentum.
     Used by the frontend Fear/Greed meter.
     """
-    return get_market_sentiment()
+    try:
+        return get_market_sentiment()
+    except Exception as exc:
+        logger.warning("Market sentiment fetch failed: %s", exc)
+        raise HTTPException(status_code=503, detail="Market data temporarily unavailable")
 
 
 @router.get("/{ticker}/explain", response_model=PredictionOut)

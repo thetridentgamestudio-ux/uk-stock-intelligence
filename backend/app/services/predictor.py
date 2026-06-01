@@ -17,6 +17,8 @@ from ..ml.features import (
 )
 from ..services.data_fetcher import FTSE_STOCKS
 from ..services.market_sentiment import get_market_sentiment
+from ..services.sector_features import add_sector_features
+from ..services.news_sentiment import sentiment_confidence_nudge
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +27,7 @@ _earnings_cache = None  # loaded once from disk
 
 
 def _load_bundle():
-    """Load model + feature list. Supports both legacy (raw model) and new (dict) formats."""
+    """Load model bundle. Supports XGBoost-only and XGBoost+LightGBM ensemble formats."""
     global _bundle
     if _bundle is not None:
         return _bundle
@@ -34,9 +36,10 @@ def _load_bundle():
         if isinstance(raw, dict):
             _bundle = raw
         else:
-            # Legacy: plain XGBClassifier — derive feature cols from model
-            _bundle = {"model": raw, "feature_cols": FEATURE_COLS}
-        logger.info("Model loaded — %d features", len(_bundle["feature_cols"]))
+            _bundle = {"model": raw, "lgb_model": None, "feature_cols": FEATURE_COLS}
+        has_lgb = _bundle.get("lgb_model") is not None
+        logger.info("Model loaded — %d features | LightGBM ensemble: %s",
+                    len(_bundle["feature_cols"]), "YES" if has_lgb else "NO")
     except FileNotFoundError:
         logger.warning("No model at %s — run train_model.py first.", settings.model_path)
     return _bundle
@@ -81,6 +84,7 @@ def run_predictions(db: Session) -> list[dict]:
         return []
 
     model        = bundle["model"]
+    lgb_model    = bundle.get("lgb_model")
     feature_cols = bundle["feature_cols"]
 
     # Fetch once for all stocks
@@ -167,7 +171,12 @@ def run_predictions(db: Session) -> list[dict]:
         X = latest[feature_cols]
 
         try:
-            prob_up = float(model.predict_proba(X)[0][1])
+            xgb_prob = float(model.predict_proba(X)[0][1])
+            if lgb_model is not None:
+                lgb_prob = float(lgb_model.predict_proba(X)[0][1])
+                prob_up  = (xgb_prob + lgb_prob) / 2   # ensemble average
+            else:
+                prob_up = xgb_prob
         except Exception as exc:
             logger.debug("Prediction failed for %s: %s", ticker, exc)
             continue
@@ -206,11 +215,16 @@ def run_predictions(db: Session) -> list[dict]:
                 earnings_flag  = f"📊 Post-earnings ({days_since}d)"
                 earnings_nudge = +0.5
 
-        confidence = round(min(99.0, max(50.0, raw_conf + nudge + earnings_nudge)), 1)
+        # ── News sentiment nudge (FinBERT on RNS + RSS) ───────────────────────
+        sentiment_nudge, sentiment_flag = sentiment_confidence_nudge(ticker, direction)
+
+        confidence = round(
+            min(99.0, max(50.0, raw_conf + nudge + earnings_nudge + sentiment_nudge)), 1
+        )
 
         # ── Pull extra info for frontend ──────────────────────────────────────
-        lbu     = int(latest.get("lbu_score",  [0]).values[0])
-        cs_rank = float(latest.get("cs_rank_1m", [np.nan]).values[0]) if "cs_rank_1m" in latest.columns else None
+        lbu     = int(latest["lbu_score"].values[0])   if "lbu_score"   in latest.columns else 0
+        cs_rank = float(latest["cs_rank_1m"].values[0]) if "cs_rank_1m" in latest.columns else None
 
         results.append({
             "ticker":          ticker,
@@ -225,7 +239,16 @@ def run_predictions(db: Session) -> list[dict]:
             "cs_rank_1m":      round(cs_rank * 100, 1) if cs_rank is not None and not np.isnan(cs_rank) else None,
             "market_regime":   regime,
             "earnings_flag":   earnings_flag,
+            "news_flag":       sentiment_flag,
+            "return_20d":      round(float(latest["return_20d"].values[0]) * 100, 2)
+                               if "return_20d" in latest.columns else None,
         })
+
+    # ── Sector relative strength (computed across all stocks together) ────────
+    try:
+        results = add_sector_features(results)
+    except Exception as exc:
+        logger.warning("Sector features failed: %s", exc)
 
     return sorted(results, key=lambda x: x["confidence"], reverse=True)
 

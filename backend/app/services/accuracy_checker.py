@@ -14,7 +14,7 @@ def evaluate_pending_predictions(db: Session) -> dict:
     """
     pending = db.execute(
         text(
-            "SELECT id, ticker, prediction_date, direction "
+            "SELECT id, ticker, prediction_date, target_date, direction "
             "FROM predictions "
             "WHERE was_correct IS NULL AND target_date <= :today"
         ),
@@ -27,8 +27,8 @@ def evaluate_pending_predictions(db: Session) -> dict:
 
     evaluated = correct = 0
 
-    for pred_id, ticker, prediction_date, direction in pending:
-        # Price the prediction was based on
+    for pred_id, ticker, prediction_date, target_date, direction in pending:
+        # Price the prediction was based on (close on prediction day)
         price_before = db.execute(
             text(
                 "SELECT close FROM stock_prices "
@@ -37,15 +37,25 @@ def evaluate_pending_predictions(db: Session) -> dict:
             {"t": ticker, "d": prediction_date},
         ).scalar()
 
-        # First available price AFTER prediction_date (handles weekends/holidays)
+        # Price on target_date; fall back to first available price after that date
+        # (handles rare cases where market was closed on the exact target_date)
         price_after = db.execute(
             text(
                 "SELECT close FROM stock_prices "
-                "WHERE ticker = :t AND date > :d "
-                "ORDER BY date ASC LIMIT 1"
+                "WHERE ticker = :t AND date = :d"
             ),
-            {"t": ticker, "d": prediction_date},
+            {"t": ticker, "d": target_date},
         ).scalar()
+
+        if price_after is None:
+            price_after = db.execute(
+                text(
+                    "SELECT close FROM stock_prices "
+                    "WHERE ticker = :t AND date > :d "
+                    "ORDER BY date ASC LIMIT 1"
+                ),
+                {"t": ticker, "d": target_date},
+            ).scalar()
 
         if price_before is None or price_after is None:
             logger.debug("Missing prices for %s on %s — skipping", ticker, prediction_date)

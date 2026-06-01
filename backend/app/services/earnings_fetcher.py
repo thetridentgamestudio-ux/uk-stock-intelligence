@@ -127,9 +127,14 @@ def fetch_earnings_for_ticker(ticker: str) -> list[str]:
             pass
 
         # ── Source 3: earningsTimestamp from info ─────────────────────────────
-        if not dates:
+        # Fire if no dates yet, OR if we have only past dates (upcoming entry missing)
+        today_str = str(date.today())
+        has_future = any(d >= today_str for d in dates)
+        if not has_future:
             try:
-                ts = t.fast_info.get("earningsTimestamp") or t.info.get("earningsTimestamp")
+                fast = getattr(t, "fast_info", None)
+                ts = (fast.get("earningsTimestamp") if fast else None) \
+                     or t.info.get("earningsTimestamp")
                 if ts:
                     d = str(datetime.utcfromtimestamp(int(ts)).date())
                     dates.add(d)

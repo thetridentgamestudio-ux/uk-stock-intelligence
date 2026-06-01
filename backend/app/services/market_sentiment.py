@@ -41,8 +41,8 @@ def get_market_sentiment() -> dict:
         return _cache
 
     try:
-        vix_data   = yf.Ticker("^VIX").history(period="5d")
-        ftse_data  = yf.Ticker("^FTSE").history(period="30d")
+        vix_data   = yf.Ticker("^VIX").history(period="10d")   # 5 trading days minimum
+        ftse_data  = yf.Ticker("^FTSE").history(period="60d")  # ~42 trading days; need >=20
 
         if vix_data.empty or ftse_data.empty:
             return _neutral_sentiment("Market data unavailable")

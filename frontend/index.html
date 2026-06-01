@@ -227,6 +227,7 @@
               ${lbuBadge(stock.lbu_score)}
               ${csRankBadge(stock.cs_rank_1m)}
               ${stock.earnings_flag ? `<span class="text-[10px] text-yellow-400 shrink-0" title="Earnings proximity">${stock.earnings_flag}</span>` : ''}
+              ${stock.news_flag ? `<span class="text-[10px] text-sky-400 shrink-0" title="FinBERT news sentiment">${stock.news_flag}</span>` : ''}
             </div>
             <span class="text-white font-semibold text-sm shrink-0 ml-3">${stock.confidence}%</span>
           </div>

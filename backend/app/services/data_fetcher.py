@@ -25,18 +25,9 @@ def _load_stocks() -> dict:
         return json.load(f)
 
 
-@property
-def FTSE_STOCKS() -> dict:
-    return _load_stocks()
-
-
-# Make FTSE_STOCKS importable as a plain dict reference
 def get_stocks() -> dict:
     return _load_stocks()
 
-
-# Keep FTSE_STOCKS as a module-level dict for backwards compatibility
-import atexit as _atexit
 
 try:
     FTSE_STOCKS = _load_stocks()

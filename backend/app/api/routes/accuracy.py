@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -33,7 +33,10 @@ def accuracy_summary(db: Session = Depends(get_db)):
 
 
 @router.get("/history")
-def accuracy_history(limit: int = 50, db: Session = Depends(get_db)):
+def accuracy_history(
+    limit: int = Query(default=50, ge=1, le=500),
+    db: Session = Depends(get_db),
+):
     """Recent predictions with actual outcomes."""
     rows = db.execute(
         text(

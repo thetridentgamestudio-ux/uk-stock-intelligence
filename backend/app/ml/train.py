@@ -9,6 +9,12 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 from xgboost import XGBClassifier
 
+try:
+    import lightgbm as lgb
+    _LGB_AVAILABLE = True
+except ImportError:
+    _LGB_AVAILABLE = False
+
 from .features import (
     CS_RANK_FEATURES,
     FEATURE_COLS,
@@ -141,12 +147,42 @@ def train_model(
         eval_set=[(X_test, y_test)],
         verbose=False,
     )
+    xgb_accuracy = accuracy_score(y_test, model.predict(X_test))
 
-    accuracy = accuracy_score(y_test, model.predict(X_test))
+    # ── LightGBM (trains alongside XGBoost; predictions are averaged) ─────────
+    lgb_model = None
+    if _LGB_AVAILABLE:
+        lgb_model = lgb.LGBMClassifier(
+            n_estimators=400,
+            max_depth=4,
+            learning_rate=0.04,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            min_child_samples=20,
+            scale_pos_weight=scale_pos_weight,
+            random_state=42,
+            verbose=-1,
+        )
+        lgb_model.fit(X_train, y_train)
+        lgb_accuracy = accuracy_score(y_test, lgb_model.predict(X_test))
+
+        # Ensemble accuracy (average probabilities)
+        xgb_prob = model.predict_proba(X_test)[:, 1]
+        lgb_prob  = lgb_model.predict_proba(X_test)[:, 1]
+        ensemble_pred = ((xgb_prob + lgb_prob) / 2 >= 0.5).astype(int)
+        accuracy = accuracy_score(y_test, ensemble_pred)
+        logger.info("XGB=%.1f%%  LGB=%.1f%%  Ensemble=%.1f%%",
+                    xgb_accuracy * 100, lgb_accuracy * 100, accuracy * 100)
+    else:
+        accuracy = xgb_accuracy
+        logger.info("LightGBM not available — using XGBoost only (%.1f%%)", accuracy * 100)
 
     os.makedirs(os.path.dirname(model_path) or ".", exist_ok=True)
-    # Save model alongside the feature column list so predictor always stays in sync
-    joblib.dump({"model": model, "feature_cols": feature_cols}, model_path)
+    joblib.dump({
+        "model":        model,
+        "lgb_model":    lgb_model,
+        "feature_cols": feature_cols,
+    }, model_path)
     logger.info("Model saved to %s (accuracy=%.1f%%, features=%d)",
                 model_path, accuracy * 100, len(feature_cols))
 
