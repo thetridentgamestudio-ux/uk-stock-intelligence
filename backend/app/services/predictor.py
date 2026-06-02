@@ -19,6 +19,7 @@ from ..services.data_fetcher import FTSE_STOCKS
 from ..services.market_sentiment import get_market_sentiment
 from ..services.sector_features import add_sector_features
 from ..services.news_sentiment import sentiment_confidence_nudge
+from ..services.macro_features import macro_confidence_nudge, get_macro_features
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ _earnings_cache = None  # loaded once from disk
 
 
 def _load_bundle():
-    """Load model bundle. Supports XGBoost-only and XGBoost+LightGBM ensemble formats."""
+    """Load model bundle — XGBoost + optional LightGBM + Platt calibrators."""
     global _bundle
     if _bundle is not None:
         return _bundle
@@ -36,10 +37,15 @@ def _load_bundle():
         if isinstance(raw, dict):
             _bundle = raw
         else:
-            _bundle = {"model": raw, "lgb_model": None, "feature_cols": FEATURE_COLS}
-        has_lgb = _bundle.get("lgb_model") is not None
-        logger.info("Model loaded — %d features | LightGBM ensemble: %s",
-                    len(_bundle["feature_cols"]), "YES" if has_lgb else "NO")
+            _bundle = {"model": raw, "lgb_model": None,
+                       "calibrator_xgb": None, "calibrator_lgb": None,
+                       "feature_cols": FEATURE_COLS}
+        has_lgb  = _bundle.get("lgb_model")      is not None
+        has_cal  = _bundle.get("calibrator_xgb") is not None
+        logger.info("Model loaded — %d features | LGB: %s | Calibrated: %s",
+                    len(_bundle["feature_cols"]),
+                    "YES" if has_lgb else "NO",
+                    "YES" if has_cal else "NO")
     except FileNotFoundError:
         logger.warning("No model at %s — run train_model.py first.", settings.model_path)
     return _bundle
@@ -83,9 +89,11 @@ def run_predictions(db: Session) -> list[dict]:
     if bundle is None:
         return []
 
-    model        = bundle["model"]
-    lgb_model    = bundle.get("lgb_model")
-    feature_cols = bundle["feature_cols"]
+    model           = bundle["model"]
+    lgb_model       = bundle.get("lgb_model")
+    calibrator_xgb  = bundle.get("calibrator_xgb")
+    calibrator_lgb  = bundle.get("calibrator_lgb")
+    feature_cols    = bundle["feature_cols"]
 
     # Fetch once for all stocks
     sentiment    = get_market_sentiment()
@@ -171,10 +179,19 @@ def run_predictions(db: Session) -> list[dict]:
         X = latest[feature_cols]
 
         try:
-            xgb_prob = float(model.predict_proba(X)[0][1])
+            raw_xgb = float(model.predict_proba(X)[0][1])
+            if calibrator_xgb is not None:
+                xgb_prob = float(calibrator_xgb.predict_proba([[raw_xgb]])[0][1])
+            else:
+                xgb_prob = raw_xgb
+
             if lgb_model is not None:
-                lgb_prob = float(lgb_model.predict_proba(X)[0][1])
-                prob_up  = (xgb_prob + lgb_prob) / 2   # ensemble average
+                raw_lgb = float(lgb_model.predict_proba(X)[0][1])
+                if calibrator_lgb is not None:
+                    lgb_prob = float(calibrator_lgb.predict_proba([[raw_lgb]])[0][1])
+                else:
+                    lgb_prob = raw_lgb
+                prob_up = (xgb_prob + lgb_prob) / 2
             else:
                 prob_up = xgb_prob
         except Exception as exc:
@@ -218,8 +235,13 @@ def run_predictions(db: Session) -> list[dict]:
         # ── News sentiment nudge (FinBERT on RNS + RSS) ───────────────────────
         sentiment_nudge, sentiment_flag = sentiment_confidence_nudge(ticker, direction)
 
+        # ── Macro backdrop nudge (GBP, Brent, SP500, VFTSE) ──────────────────
+        macro_nudge, macro_flag = macro_confidence_nudge(direction)
+
         confidence = round(
-            min(99.0, max(50.0, raw_conf + nudge + earnings_nudge + sentiment_nudge)), 1
+            min(99.0, max(50.0,
+                raw_conf + nudge + earnings_nudge + sentiment_nudge + macro_nudge
+            )), 1
         )
 
         # ── Pull extra info for frontend ──────────────────────────────────────
@@ -240,6 +262,7 @@ def run_predictions(db: Session) -> list[dict]:
             "market_regime":   regime,
             "earnings_flag":   earnings_flag,
             "news_flag":       sentiment_flag,
+            "macro_flag":      macro_flag,
             "return_20d":      round(float(latest["return_20d"].values[0]) * 100, 2)
                                if "return_20d" in latest.columns else None,
         })

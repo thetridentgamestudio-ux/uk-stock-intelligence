@@ -65,7 +65,20 @@ _PHASE2_FEATURES = [
     "price_accel",          # return_1d minus avg_daily_return_5d — acceleration
 ]
 
-FEATURE_COLS = _BASE_FEATURES + _NEW_FEATURES + _PHASE2_FEATURES
+# ── Phase-3 signals ───────────────────────────────────────────────────────────
+_PHASE3_FEATURES = [
+    # Liquidity / market microstructure (Amihud 2002, Roll 1984)
+    "amihud_20d",           # rolling 20d price-impact per unit volume (illiquidity)
+    "amihud_change_5d",     # 5d change in Amihud ratio — liquidity shock signal
+    "roll_spread",          # Roll bid-ask spread estimate from return serial covariance
+
+    # Calendar effects (turn-of-month, day-of-week — Springer 2024)
+    "day_of_week",          # 0=Mon … 4=Fri
+    "turn_of_month",        # 1 if within 2 trading days of month start/end
+    "month_of_year",        # 1–12 (January effect, April UK tax year)
+]
+
+FEATURE_COLS = _BASE_FEATURES + _NEW_FEATURES + _PHASE2_FEATURES + _PHASE3_FEATURES
 
 # Cross-sectional rank features — appended AFTER per-stock feature computation
 # (computed in train.py / predictor.py across the full universe per date)
@@ -292,6 +305,34 @@ def compute_features(
 
     avg_daily_ret_5d = df["return_5d"] / 5   # avg daily return over last 5 days
     df["price_accel"] = df["return_1d"] - avg_daily_ret_5d
+
+    # ── Phase-3: Amihud illiquidity ratio ────────────────────────────────────
+    # |return| / (volume × close) — price impact per £ traded
+    # A spike = liquidity shock = often predicts reversal
+    turnover      = (volume * close).replace(0, np.nan)
+    amihud_daily  = df["return_1d"].abs() / turnover
+    df["amihud_20d"]      = amihud_daily.rolling(20).mean()
+    df["amihud_change_5d"] = (
+        df["amihud_20d"] / df["amihud_20d"].shift(5).replace(0, np.nan) - 1
+    )
+
+    # ── Phase-3: Roll bid-ask spread estimator ────────────────────────────────
+    # 2 * sqrt(max(-Cov(Δp_t, Δp_{t-1}), 0))
+    price_diff  = close.diff()
+    cov_serial  = price_diff.rolling(20).cov(price_diff.shift(1))
+    df["roll_spread"] = 2 * np.sqrt((-cov_serial).clip(lower=0)) / close
+
+    # ── Phase-3: Calendar features ────────────────────────────────────────────
+    idx = df.index
+    df["day_of_week"]   = idx.dayofweek.astype(float)
+    df["month_of_year"] = idx.month.astype(float)
+
+    # Turn-of-month: within 2 trading days of month start or end
+    day_of_month  = idx.day
+    days_in_month = idx.days_in_month
+    df["turn_of_month"] = (
+        (day_of_month <= 2) | (day_of_month >= days_in_month - 1)
+    ).astype(float)
 
     # ── Target ────────────────────────────────────────────────────────────────
 

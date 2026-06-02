@@ -1,29 +1,29 @@
 {
   "BUT.L": {
-    "score": -0.7581,
+    "score": -0.8675,
     "label": "negative",
-    "count": 14,
+    "count": 20,
     "headlines": [
+      "How 'confused' AI rollout hurts firms and baffles staff",
       "Wise under investigation over money laundering control concerns",
       "Put a \u00a35 deposit on vapes to stop fires, say waste companies",
       "US government prepares to print $250 note featuring Trump's face",
-      "The rise of the fruit that tastes like custard",
-      "Robo-top: The machines that could make your next t-shirt"
+      "The rise of the fruit that tastes like custard"
     ],
-    "updated": "2026-06-01"
+    "updated": "2026-06-02"
   },
   "COST.L": {
-    "score": -0.4056,
+    "score": -0.9621,
     "label": "negative",
-    "count": 8,
+    "count": 6,
     "headlines": [
-      "The \u00a35 coffee that tells a story of global economic turmoil",
       "'Six eggs used to be \u00a31' - why everyday essentials cost so much more now",
       "Home care workers face fuel cost spike fears",
+      "Trump had no plan B for Iran. It shows | Kenneth Roth",
       "Caring for ageing parents is becoming a financial nightmare in the US. Here\u2019s what we can do | Courtney E Martin",
-      "Local government could also do more to help with the cost of living | Letter"
+      "\u2018It\u2019s never enough\u2019: young Americans struggle to build financial independence as cost of living spikes"
     ],
-    "updated": "2026-06-01"
+    "updated": "2026-06-02"
   },
   "DOM.L": {
     "score": -0.965,
@@ -32,28 +32,28 @@
     "headlines": [
       "M&S chief\u2019s pay slashed by \u00a33m after cyberattack turmoil"
     ],
-    "updated": "2026-06-01"
+    "updated": "2026-06-02"
   },
   "EZJ.L": {
     "score": 0.0,
     "label": "neutral",
-    "count": 2,
+    "count": 3,
     "headlines": [
       "EasyJet says possible takeover bid 'opportunistic'",
+      "EasyJet is an obvious takeover target, but US approach may not be a flyer | Nils Pratley",
       "EasyJet says US takeover bid would be \u2018highly opportunistic\u2019"
     ],
-    "updated": "2026-06-01"
+    "updated": "2026-06-02"
   },
   "FOUR.L": {
     "score": -0.7957,
     "label": "negative",
-    "count": 3,
+    "count": 2,
     "headlines": [
       "Four in 10 struggle to access mobile signal on the move in the UK",
-      "Deloitte UK appoints first chief AI officer in drive for \u2018AI-enabled\u2019 services",
-      "UK manufacturing survives Iran war impact"
+      "Deloitte UK appoints first chief AI officer in drive for \u2018AI-enabled\u2019 services"
     ],
-    "updated": "2026-06-01"
+    "updated": "2026-06-02"
   },
   "GEN.L": {
     "score": 0.0,
@@ -67,9 +67,9 @@
     "updated": "2026-06-01"
   },
   "HAS.L": {
-    "score": -0.1706,
+    "score": -0.2393,
     "label": "negative",
-    "count": 29,
+    "count": 32,
     "headlines": [
       "UK banks blocked from cyber AI tool Mythos get offer from rival OpenAI",
       "Ferrari wanted to take on Chinese EVs with the Luce - then the backlash started",
@@ -77,7 +77,7 @@
       "Love factually: Dating start-ups promise to cut the cheats",
       "Rise in solar panel sales as people 'want to save money'"
     ],
-    "updated": "2026-06-01"
+    "updated": "2026-06-02"
   },
   "INF.L": {
     "score": 0.0,
@@ -86,7 +86,7 @@
     "headlines": [
       "Abusive passengers could be blacklisted from all airlines under new proposal"
     ],
-    "updated": "2026-06-01"
+    "updated": "2026-06-02"
   },
   "PINT.L": {
     "score": 0.0,
@@ -95,17 +95,16 @@
     "headlines": [
       "Why is Lidl opening a pub?"
     ],
-    "updated": "2026-06-01"
+    "updated": "2026-06-02"
   },
   "SHAW.L": {
-    "score": 0.5904,
-    "label": "positive",
-    "count": 2,
+    "score": 0.0,
+    "label": "neutral",
+    "count": 1,
     "headlines": [
-      "Local government could also do more to help with the cost of living | Letter",
       "North Highland Names Anthony Shaw Global Chief Executive Officer"
     ],
-    "updated": "2026-06-01"
+    "updated": "2026-06-02"
   },
   "SVS.L": {
     "score": -0.9677,
@@ -114,7 +113,7 @@
     "headlines": [
       "UK house prices fall for first time this year amid rising mortgage rates"
     ],
-    "updated": "2026-06-01"
+    "updated": "2026-06-02"
   },
   "WIZZ.L": {
     "score": 0.0,
@@ -123,6 +122,35 @@
     "headlines": [
       "Arrive three hours before flight home, airline boss tells UK holidaymakers"
     ],
-    "updated": "2026-06-01"
+    "updated": "2026-06-02"
+  },
+  "DPLM.L": {
+    "score": -0.5037,
+    "label": "negative",
+    "count": 2,
+    "headlines": [
+      "\u2018Sit back and relax\u2019: Trump insists Iran deal close despite strikes \u2013 The Latest",
+      "Mandelson Files add insult to injury, but the patient was already beyond saving"
+    ],
+    "updated": "2026-06-02"
+  },
+  "IPO.L": {
+    "score": 0.683,
+    "label": "positive",
+    "count": 2,
+    "headlines": [
+      "Alphabet to raise $80bn from share sales to fund AI spending splurge \u2013 business live",
+      "Anthropic files for IPO as race with OpenAI heats up"
+    ],
+    "updated": "2026-06-02"
+  },
+  "SNR.L": {
+    "score": 0.0,
+    "label": "neutral",
+    "count": 1,
+    "headlines": [
+      "If performance matters more than privilege then prove it"
+    ],
+    "updated": "2026-06-02"
   }
 }

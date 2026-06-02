@@ -13,6 +13,7 @@ from ...services.explainer import generate_explanation
 from ...services.predictor import run_predictions
 from ...services.rns_scraper import fetch_news_headlines
 from ...services.market_sentiment import get_market_sentiment
+from ...services.macro_features import get_macro_features
 
 router = APIRouter(prefix="/predictions", tags=["predictions"])
 
@@ -35,6 +36,16 @@ def get_daily_predictions(db: Session = Depends(get_db)):
         "top_losers": losers,
         "total_analysed": len(predictions),
     }
+
+
+@router.get("/macro")
+def macro_endpoint():
+    """Global macro backdrop — GBP, Brent, SP500, VFTSE, gilt yields."""
+    try:
+        return get_macro_features()
+    except Exception as exc:
+        logger.warning("Macro features failed: %s", exc)
+        raise HTTPException(status_code=503, detail="Macro data temporarily unavailable")
 
 
 @router.get("/market-sentiment")

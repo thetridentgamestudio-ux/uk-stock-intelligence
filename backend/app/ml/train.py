@@ -177,11 +177,34 @@ def train_model(
         accuracy = xgb_accuracy
         logger.info("LightGBM not available — using XGBoost only (%.1f%%)", accuracy * 100)
 
+    # ── Platt calibration (sigmoid) — fits A,B params on held-out test set ──────
+    # Maps raw model probabilities to calibrated probabilities so that
+    # a 65% prediction truly means ~65% historical accuracy (enables Kelly sizing)
+    from sklearn.linear_model import LogisticRegression
+
+    def _fit_platt(mdl, X_cal, y_cal):
+        """Fit a Platt scaler: logistic regression on raw model probabilities."""
+        try:
+            raw_probs = mdl.predict_proba(X_cal)[:, 1].reshape(-1, 1)
+            platt = LogisticRegression(C=1.0, solver="lbfgs", max_iter=500)
+            platt.fit(raw_probs, y_cal)
+            return platt
+        except Exception as exc:
+            logger.warning("Platt calibration failed: %s", exc)
+            return None
+
+    calibrator_xgb = _fit_platt(model, X_test, y_test)
+    calibrator_lgb  = _fit_platt(lgb_model, X_test, y_test) if lgb_model else None
+    if calibrator_xgb:
+        logger.info("Platt calibration fitted on %d samples", len(X_test))
+
     os.makedirs(os.path.dirname(model_path) or ".", exist_ok=True)
     joblib.dump({
-        "model":        model,
-        "lgb_model":    lgb_model,
-        "feature_cols": feature_cols,
+        "model":           model,
+        "lgb_model":       lgb_model,
+        "calibrator_xgb":  calibrator_xgb,
+        "calibrator_lgb":  calibrator_lgb,
+        "feature_cols":    feature_cols,
     }, model_path)
     logger.info("Model saved to %s (accuracy=%.1f%%, features=%d)",
                 model_path, accuracy * 100, len(feature_cols))
