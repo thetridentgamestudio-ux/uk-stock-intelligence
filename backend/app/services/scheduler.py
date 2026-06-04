@@ -24,6 +24,36 @@ logger = logging.getLogger(__name__)
 _scheduler = AsyncIOScheduler(timezone="Europe/London")
 
 
+# ── 1st of month, 06:00 — Monthly model retrain ──────────────────────────────
+
+async def _monthly_retrain() -> None:
+    """
+    Retrain XGBoost + LightGBM ensemble with recency weighting.
+    Runs at 06:00 on the 1st of each month — before the market opens.
+    Uses expanding window: all history kept, recent data upweighted 2×.
+    """
+    logger.info("Scheduler: starting monthly model retrain...")
+    try:
+        from ..database import SessionLocal
+        from ..ml.train import train_model
+        from ..config import settings
+        db = SessionLocal()
+        try:
+            result = train_model(db, model_path=settings.model_path)
+            logger.info(
+                "Scheduler: retrain complete — acc=%.1f%% | features=%d | train_rows=%d",
+                result["accuracy"] * 100, result["feature_count"], result["train_samples"]
+            )
+        finally:
+            db.close()
+        # Reload model bundle in predictor (clear cached bundle)
+        import backend.app.services.predictor as _pred
+        _pred._bundle = None
+        logger.info("Scheduler: model bundle reloaded for live predictions")
+    except Exception as exc:
+        logger.error("Scheduler: monthly retrain failed: %s", exc)
+
+
 # ── 08:00 — Morning news sentiment ────────────────────────────────────────────
 
 async def _morning_news() -> None:
@@ -107,6 +137,12 @@ async def _full_daily_pipeline() -> None:
 @asynccontextmanager
 async def lifespan(app):
     _scheduler.add_job(
+        _monthly_retrain,
+        CronTrigger(day=1, hour=6, minute=0, timezone="Europe/London"),
+        id="monthly_retrain",
+        replace_existing=True,
+    )
+    _scheduler.add_job(
         _morning_news,
         CronTrigger(day_of_week="mon-fri", hour=8, minute=0, timezone="Europe/London"),
         id="morning_news",
@@ -121,7 +157,9 @@ async def lifespan(app):
     _scheduler.start()
     logger.info(
         "Scheduler started — "
-        "news @ 08:00 Mon–Fri | pipeline @ 17:15 Mon–Fri (London time)"
+        "retrain @ 06:00 1st of month | "
+        "news @ 08:00 Mon–Fri | "
+        "pipeline @ 17:15 Mon–Fri (London time)"
     )
     yield
     _scheduler.shutdown()

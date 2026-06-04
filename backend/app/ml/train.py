@@ -25,6 +25,27 @@ from .features import (
 logger = logging.getLogger(__name__)
 
 
+def _compute_recency_weights(dates: pd.DatetimeIndex) -> np.ndarray:
+    """
+    Assign sample weights based on how recent each date is.
+    Recent observations are more representative of current market regime.
+
+    Weight schedule (expanding window with soft decay):
+      Last 6 months    → 2.0×
+      6–12 months ago  → 1.5×
+      12–24 months ago → 1.2×
+      Older            → 1.0×
+    """
+    today  = pd.Timestamp.now()
+    months = ((today - dates).days / 30.44).round(1)
+
+    weights = np.where(months <= 6,  2.0,
+              np.where(months <= 12, 1.5,
+              np.where(months <= 24, 1.2,
+                                     1.0)))
+    return weights.astype(np.float32)
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Data loading
 # ─────────────────────────────────────────────────────────────────────────────
@@ -121,6 +142,19 @@ def train_model(
     X_train, y_train = train[feature_cols], train["target"]
     X_test,  y_test  = test[feature_cols],  test["target"]
 
+    # ── Recency weighting — recent data matters more than 3-year-old data ──────
+    # Markets shift regime; a model trained equally on 2021 and 2026 data
+    # is partially fitted on a dead regime. Upweight recent observations.
+    #
+    # Weight schedule (research-backed: arXiv:2601.08896):
+    #   Last 6 months:    2.0×  (current regime — highest priority)
+    #   6–12 months ago:  1.5×  (recent history — still very relevant)
+    #   12–24 months ago: 1.2×  (medium-term — some regime drift)
+    #   Older than 2 yrs: 1.0×  (baseline — long-term structural patterns)
+    train_weights = _compute_recency_weights(train.index)
+    logger.info("Recency weights: min=%.2f max=%.2f mean=%.2f — recent data upweighted",
+                train_weights.min(), train_weights.max(), train_weights.mean())
+
     # Fix class imbalance (markets have slight upward bias)
     neg = int((y_train == 0).sum())
     pos = int((y_train == 1).sum())
@@ -144,6 +178,7 @@ def train_model(
     model.fit(
         X_train,
         y_train,
+        sample_weight=train_weights,
         eval_set=[(X_test, y_test)],
         verbose=False,
     )
@@ -163,7 +198,7 @@ def train_model(
             random_state=42,
             verbose=-1,
         )
-        lgb_model.fit(X_train, y_train)
+        lgb_model.fit(X_train, y_train, sample_weight=train_weights)
         lgb_accuracy = accuracy_score(y_test, lgb_model.predict(X_test))
 
         # Ensemble accuracy (average probabilities)
