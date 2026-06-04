@@ -21,8 +21,62 @@ from .features import (
     add_cross_sectional_ranks,
     compute_features,
 )
+from .regime_labels import (
+    add_regime_labels,
+    MIN_REGIME_ROWS,
+    REGIME_LABELS,
+)
 
 logger = logging.getLogger(__name__)
+
+
+def _train_single_ensemble(
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+    weights: np.ndarray,
+    scale_pos_weight: float,
+    label: str = "",
+) -> tuple:
+    """
+    Train one XGBoost + LightGBM pair with given data and weights.
+    Returns (xgb_model, lgb_model).
+    """
+    xgb = XGBClassifier(
+        n_estimators=400,
+        max_depth=4,
+        learning_rate=0.04,
+        subsample=0.8,
+        colsample_bytree=0.8,
+        min_child_weight=3,
+        gamma=0.1,
+        scale_pos_weight=scale_pos_weight,
+        eval_metric="logloss",
+        random_state=42,
+        verbosity=0,
+    )
+    xgb.fit(X_train, y_train, sample_weight=weights, verbose=False)
+
+    lgb_m = None
+    if _LGB_AVAILABLE:
+        lgb_m = lgb.LGBMClassifier(
+            n_estimators=400,
+            max_depth=4,
+            learning_rate=0.04,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            min_child_samples=20,
+            scale_pos_weight=scale_pos_weight,
+            random_state=42,
+            verbose=-1,
+        )
+        lgb_m.fit(X_train, y_train, sample_weight=weights)
+
+    logger.info(
+        "Trained %sensemble — %d rows | scale_pos_weight=%.3f",
+        f"{label} " if label else "",
+        len(X_train), scale_pos_weight,
+    )
+    return xgb, lgb_m
 
 
 def _compute_recency_weights(dates: pd.DatetimeIndex) -> np.ndarray:
@@ -162,55 +216,79 @@ def train_model(
     logger.info("Class balance — up: %d  down: %d  scale_pos_weight=%.3f",
                 pos, neg, scale_pos_weight)
 
-    model = XGBClassifier(
-        n_estimators=400,
-        max_depth=4,
-        learning_rate=0.04,
-        subsample=0.8,
-        colsample_bytree=0.8,
-        min_child_weight=3,
-        gamma=0.1,
-        scale_pos_weight=scale_pos_weight,
-        eval_metric="logloss",
-        random_state=42,
-        verbosity=0,
-    )
-    model.fit(
-        X_train,
-        y_train,
-        sample_weight=train_weights,
-        eval_set=[(X_test, y_test)],
-        verbose=False,
+    # ── Full-universe model (baseline + fallback) ─────────────────────────────
+    model, lgb_model = _train_single_ensemble(
+        X_train, y_train, train_weights, scale_pos_weight, label="full"
     )
     xgb_accuracy = accuracy_score(y_test, model.predict(X_test))
 
-    # ── LightGBM (trains alongside XGBoost; predictions are averaged) ─────────
-    lgb_model = None
-    if _LGB_AVAILABLE:
-        lgb_model = lgb.LGBMClassifier(
-            n_estimators=400,
-            max_depth=4,
-            learning_rate=0.04,
-            subsample=0.8,
-            colsample_bytree=0.8,
-            min_child_samples=20,
-            scale_pos_weight=scale_pos_weight,
-            random_state=42,
-            verbose=-1,
-        )
-        lgb_model.fit(X_train, y_train, sample_weight=train_weights)
+    if lgb_model is not None:
         lgb_accuracy = accuracy_score(y_test, lgb_model.predict(X_test))
-
-        # Ensemble accuracy (average probabilities)
         xgb_prob = model.predict_proba(X_test)[:, 1]
-        lgb_prob  = lgb_model.predict_proba(X_test)[:, 1]
+        lgb_prob = lgb_model.predict_proba(X_test)[:, 1]
         ensemble_pred = ((xgb_prob + lgb_prob) / 2 >= 0.5).astype(int)
         accuracy = accuracy_score(y_test, ensemble_pred)
-        logger.info("XGB=%.1f%%  LGB=%.1f%%  Ensemble=%.1f%%",
+        logger.info("Full model — XGB=%.1f%%  LGB=%.1f%%  Ensemble=%.1f%%",
                     xgb_accuracy * 100, lgb_accuracy * 100, accuracy * 100)
     else:
         accuracy = xgb_accuracy
-        logger.info("LightGBM not available — using XGBoost only (%.1f%%)", accuracy * 100)
+        logger.info("Full model — XGB=%.1f%% (LGB unavailable)", accuracy * 100)
+
+    # ── Regime-conditional models ─────────────────────────────────────────────
+    # Label each training row with the market regime on that date.
+    # Train a separate XGB+LGB ensemble for each regime.
+    # At prediction time, select the model matching today's regime.
+    logger.info("Building regime-conditional models (BULLISH / NEUTRAL / BEARISH)...")
+    train_labelled = add_regime_labels(train)
+    regime_models: dict[str, dict] = {}
+
+    for regime in REGIME_LABELS:
+        regime_train = train_labelled[train_labelled["regime"] == regime]
+        n = len(regime_train)
+
+        if n < MIN_REGIME_ROWS:
+            logger.warning(
+                "Regime %s: only %d rows (need %d) — skipping, will use full model",
+                regime, n, MIN_REGIME_ROWS,
+            )
+            continue
+
+        rX = regime_train[feature_cols]
+        ry = regime_train["target"]
+        rw = _compute_recency_weights(regime_train.index)
+
+        neg_r = int((ry == 0).sum())
+        pos_r = int((ry == 1).sum())
+        spw_r = neg_r / pos_r if pos_r > 0 else 1.0
+
+        rxgb, rlgb = _train_single_ensemble(rX, ry, rw, spw_r, label=regime)
+
+        # Evaluate on test set rows matching this regime
+        test_labelled = add_regime_labels(test)
+        regime_test = test_labelled[test_labelled["regime"] == regime]
+        if len(regime_test) >= 50:
+            rX_test = regime_test[feature_cols]
+            ry_test = regime_test["target"]
+            r_xgb_prob = rxgb.predict_proba(rX_test)[:, 1]
+            if rlgb:
+                r_lgb_prob = rlgb.predict_proba(rX_test)[:, 1]
+                r_pred = ((r_xgb_prob + r_lgb_prob) / 2 >= 0.5).astype(int)
+            else:
+                r_pred = (r_xgb_prob >= 0.5).astype(int)
+            r_acc = accuracy_score(ry_test, r_pred)
+            logger.info(
+                "Regime %s model: %d train / %d test → %.1f%% accuracy",
+                regime, n, len(regime_test), r_acc * 100,
+            )
+        else:
+            logger.info("Regime %s model: %d train rows", regime, n)
+
+        regime_models[regime] = {"xgb": rxgb, "lgb": rlgb}
+
+    logger.info(
+        "Regime models trained: %s",
+        ", ".join(regime_models.keys()) or "NONE (fell back to full model)",
+    )
 
     # ── Platt calibration (sigmoid) — fits A,B params on held-out test set ──────
     # Maps raw model probabilities to calibrated probabilities so that
@@ -256,14 +334,19 @@ def train_model(
     joblib.dump({
         "model":           model,
         "lgb_model":       lgb_model,
+        "regime_models":   regime_models,   # dict[regime → {xgb, lgb}]
         "meta_learner":    meta_learner,
         "calibrator_xgb":  calibrator_xgb,
         "calibrator_lgb":  calibrator_lgb,
         "feature_cols":    feature_cols,
     }, model_path)
-    logger.info("Model saved to %s (accuracy=%.1f%%, features=%d, meta-learner=%s)",
-                model_path, accuracy * 100, len(feature_cols),
-                "YES" if meta_learner else "NO")
+    logger.info(
+        "Model saved to %s (accuracy=%.1f%%, features=%d, "
+        "regime models=%s, meta-learner=%s)",
+        model_path, accuracy * 100, len(feature_cols),
+        list(regime_models.keys()) or "none",
+        "YES" if meta_learner else "NO",
+    )
 
     return {
         "accuracy":      accuracy,

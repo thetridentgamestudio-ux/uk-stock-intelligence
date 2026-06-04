@@ -29,7 +29,7 @@ _earnings_cache = None  # loaded once from disk
 
 
 def _load_bundle():
-    """Load model bundle — XGBoost + optional LightGBM + Platt calibrators."""
+    """Load model bundle — full model + regime models + calibrators."""
     global _bundle
     if _bundle is not None:
         return _bundle
@@ -39,14 +39,20 @@ def _load_bundle():
             _bundle = raw
         else:
             _bundle = {"model": raw, "lgb_model": None,
+                       "regime_models": {}, "meta_learner": None,
                        "calibrator_xgb": None, "calibrator_lgb": None,
                        "feature_cols": FEATURE_COLS}
-        has_lgb  = _bundle.get("lgb_model")      is not None
-        has_cal  = _bundle.get("calibrator_xgb") is not None
-        logger.info("Model loaded — %d features | LGB: %s | Calibrated: %s",
-                    len(_bundle["feature_cols"]),
-                    "YES" if has_lgb else "NO",
-                    "YES" if has_cal else "NO")
+        has_lgb     = _bundle.get("lgb_model")      is not None
+        has_cal     = _bundle.get("calibrator_xgb") is not None
+        has_regime  = bool(_bundle.get("regime_models"))
+        regime_keys = list(_bundle.get("regime_models", {}).keys())
+        logger.info(
+            "Model loaded — %d features | LGB: %s | Calibrated: %s | Regime models: %s",
+            len(_bundle["feature_cols"]),
+            "YES" if has_lgb  else "NO",
+            "YES" if has_cal  else "NO",
+            regime_keys or "none (using full model)",
+        )
     except FileNotFoundError:
         logger.warning("No model at %s — run train_model.py first.", settings.model_path)
     return _bundle
@@ -90,18 +96,32 @@ def run_predictions(db: Session) -> list[dict]:
     if bundle is None:
         return []
 
-    model           = bundle["model"]
-    lgb_model       = bundle.get("lgb_model")
-    meta_learner    = bundle.get("meta_learner")
-    calibrator_xgb  = bundle.get("calibrator_xgb")
-    calibrator_lgb  = bundle.get("calibrator_lgb")
-    feature_cols    = bundle["feature_cols"]
-
-    # Fetch once for all stocks
+    # Fetch market sentiment first — needed for regime model selection
     sentiment    = get_market_sentiment()
     regime_score = sentiment.get("regime_score", 0)   # -3 to +3
     regime       = sentiment.get("regime", "NEUTRAL")
     NUDGE_PER_PT = 0.5   # pp per regime_score unit
+
+    # ── Select regime-specific model if available ─────────────────────────────
+    # Fall back to full model if this regime wasn't trained (too few samples)
+    regime_models  = bundle.get("regime_models", {})
+    if regime in regime_models:
+        active_models  = regime_models[regime]
+        model          = active_models["xgb"]
+        lgb_model      = active_models["lgb"]
+        logger.info("Using %s regime model for predictions", regime)
+    else:
+        model    = bundle["model"]
+        lgb_model = bundle.get("lgb_model")
+        logger.info(
+            "No regime model for %s — using full model (available: %s)",
+            regime, list(regime_models.keys()) or "none",
+        )
+
+    meta_learner    = bundle.get("meta_learner")
+    calibrator_xgb  = bundle.get("calibrator_xgb")
+    calibrator_lgb  = bundle.get("calibrator_lgb")
+    feature_cols    = bundle["feature_cols"]
 
     use_cs_ranks  = any(col in feature_cols for col in CS_RANK_FEATURES)
 
