@@ -1,29 +1,27 @@
 {
   "BUT.L": {
-    "score": -0.8675,
+    "score": -0.3117,
     "label": "negative",
-    "count": 20,
+    "count": 14,
     "headlines": [
-      "How 'confused' AI rollout hurts firms and baffles staff",
+      "Costly fuel pushes more Indians to buy electric cars but challenges remain",
       "Wise under investigation over money laundering control concerns",
       "Put a \u00a35 deposit on vapes to stop fires, say waste companies",
-      "US government prepares to print $250 note featuring Trump's face",
+      "How 'confused' AI rollout hurts firms and baffles staff",
       "The rise of the fruit that tastes like custard"
     ],
-    "updated": "2026-06-02"
+    "updated": "2026-06-04"
   },
   "COST.L": {
-    "score": -0.9621,
+    "score": -0.7983,
     "label": "negative",
-    "count": 6,
+    "count": 3,
     "headlines": [
       "'Six eggs used to be \u00a31' - why everyday essentials cost so much more now",
-      "Home care workers face fuel cost spike fears",
-      "Trump had no plan B for Iran. It shows | Kenneth Roth",
-      "Caring for ageing parents is becoming a financial nightmare in the US. Here\u2019s what we can do | Courtney E Martin",
-      "\u2018It\u2019s never enough\u2019: young Americans struggle to build financial independence as cost of living spikes"
+      "In 23 months Labour has dragged the UK economy to its knees",
+      "\u2018Tipping point\u2019: CBI boss slams \u00a3345bn business tax burden amid \u2018cost of doing business\u2019 crisis"
     ],
-    "updated": "2026-06-02"
+    "updated": "2026-06-04"
   },
   "DOM.L": {
     "score": -0.965,
@@ -37,23 +35,21 @@
   "EZJ.L": {
     "score": 0.0,
     "label": "neutral",
-    "count": 3,
-    "headlines": [
-      "EasyJet says possible takeover bid 'opportunistic'",
-      "EasyJet is an obvious takeover target, but US approach may not be a flyer | Nils Pratley",
-      "EasyJet says US takeover bid would be \u2018highly opportunistic\u2019"
-    ],
-    "updated": "2026-06-02"
-  },
-  "FOUR.L": {
-    "score": -0.7957,
-    "label": "negative",
     "count": 2,
     "headlines": [
-      "Four in 10 struggle to access mobile signal on the move in the UK",
-      "Deloitte UK appoints first chief AI officer in drive for \u2018AI-enabled\u2019 services"
+      "EasyJet says possible takeover bid 'opportunistic'",
+      "For stock-picking success, think like a PE investor"
     ],
-    "updated": "2026-06-02"
+    "updated": "2026-06-04"
+  },
+  "FOUR.L": {
+    "score": -0.9584,
+    "label": "negative",
+    "count": 1,
+    "headlines": [
+      "Water firm fined \u00a31.8m over parasite outbreak"
+    ],
+    "updated": "2026-06-04"
   },
   "GEN.L": {
     "score": 0.0,
@@ -67,26 +63,26 @@
     "updated": "2026-06-01"
   },
   "HAS.L": {
-    "score": -0.2393,
+    "score": -0.3065,
     "label": "negative",
-    "count": 32,
+    "count": 31,
     "headlines": [
       "UK banks blocked from cyber AI tool Mythos get offer from rival OpenAI",
-      "Ferrari wanted to take on Chinese EVs with the Luce - then the backlash started",
-      "'I've applied for more than 400 roles' - how young people are facing the job shortage",
       "Love factually: Dating start-ups promise to cut the cheats",
-      "Rise in solar panel sales as people 'want to save money'"
+      "Rise in solar panel sales as people 'want to save money'",
+      "Sir John Curtice: Why Labour's Brexit focus has shifted from Leavers to Remainers",
+      "Why it's now harder to get a Saturday job"
     ],
-    "updated": "2026-06-02"
+    "updated": "2026-06-04"
   },
   "INF.L": {
     "score": 0.0,
     "label": "neutral",
     "count": 1,
     "headlines": [
-      "Abusive passengers could be blacklisted from all airlines under new proposal"
+      "Abusive passengers could be banned from all airlines under new proposal"
     ],
-    "updated": "2026-06-02"
+    "updated": "2026-06-04"
   },
   "PINT.L": {
     "score": 0.0,
@@ -95,7 +91,7 @@
     "headlines": [
       "Why is Lidl opening a pub?"
     ],
-    "updated": "2026-06-02"
+    "updated": "2026-06-04"
   },
   "SHAW.L": {
     "score": 0.0,
@@ -113,7 +109,7 @@
     "headlines": [
       "UK house prices fall for first time this year amid rising mortgage rates"
     ],
-    "updated": "2026-06-02"
+    "updated": "2026-06-03"
   },
   "WIZZ.L": {
     "score": 0.0,
@@ -125,32 +121,111 @@
     "updated": "2026-06-02"
   },
   "DPLM.L": {
-    "score": -0.5037,
+    "score": -0.4107,
     "label": "negative",
-    "count": 2,
+    "count": 1,
     "headlines": [
-      "\u2018Sit back and relax\u2019: Trump insists Iran deal close despite strikes \u2013 The Latest",
-      "Mandelson Files add insult to injury, but the patient was already beyond saving"
+      "Trump insists Iran deal close despite strikes \u2013 The Latest"
     ],
-    "updated": "2026-06-02"
+    "updated": "2026-06-04"
   },
   "IPO.L": {
-    "score": 0.683,
-    "label": "positive",
-    "count": 2,
+    "score": -0.7299,
+    "label": "negative",
+    "count": 1,
     "headlines": [
-      "Alphabet to raise $80bn from share sales to fund AI spending splurge \u2013 business live",
-      "Anthropic files for IPO as race with OpenAI heats up"
+      "SpaceX aims for world\u2019s largest IPO amid fears it is \u2018significantly overvalued\u2019 \u2013 business live"
     ],
-    "updated": "2026-06-02"
+    "updated": "2026-06-04"
   },
   "SNR.L": {
+    "score": -0.7299,
+    "label": "negative",
+    "count": 1,
+    "headlines": [
+      "SpaceX aims for world\u2019s largest IPO amid fears it is \u2018significantly overvalued\u2019 \u2013 business live"
+    ],
+    "updated": "2026-06-04"
+  },
+  "BA.L": {
     "score": 0.0,
     "label": "neutral",
     "count": 1,
     "headlines": [
-      "If performance matters more than privilege then prove it"
+      "XFolio AI Acquires Absolute Payment Solutions to Unify Treasury and Payments for UK Corporates"
     ],
-    "updated": "2026-06-02"
+    "updated": "2026-06-03"
+  },
+  "BOY.L": {
+    "score": 0.0,
+    "label": "neutral",
+    "count": 1,
+    "headlines": [
+      "Municipal bonds could revolutionise Britain \u2013 but there\u2019s a catch"
+    ],
+    "updated": "2026-06-03"
+  },
+  "BP.L": {
+    "score": 0.0,
+    "label": "neutral",
+    "count": 1,
+    "headlines": [
+      "The BP drama will fade: boards are allowed to ditch the chair"
+    ],
+    "updated": "2026-06-04"
+  },
+  "AUTO.L": {
+    "score": 0.0,
+    "label": "neutral",
+    "count": 1,
+    "headlines": [
+      "Costly fuel pushes more Indians to buy electric cars but challenges remain"
+    ],
+    "updated": "2026-06-04"
+  },
+  "BAG.L": {
+    "score": 0.0,
+    "label": "neutral",
+    "count": 1,
+    "headlines": [
+      "Americans should be reassured by high prices, apparently. Does Trump's team really think we're that stupid | Arwa Mahdawi"
+    ],
+    "updated": "2026-06-04"
+  },
+  "BARC.L": {
+    "score": 0.0,
+    "label": "neutral",
+    "count": 1,
+    "headlines": [
+      "KBRA Assigns Preliminary Ratings to UK Logistics 2026-2 DAC"
+    ],
+    "updated": "2026-06-04"
+  },
+  "CCC.L": {
+    "score": 0.0,
+    "label": "neutral",
+    "count": 1,
+    "headlines": [
+      "Computacenter joins FTSE 100 in reshuffle as index builds tech exposure"
+    ],
+    "updated": "2026-06-04"
+  },
+  "HTG.L": {
+    "score": 0.0,
+    "label": "neutral",
+    "count": 1,
+    "headlines": [
+      "'It is by the grace of God that you find a diamond'"
+    ],
+    "updated": "2026-06-04"
+  },
+  "INVP.L": {
+    "score": 0.0,
+    "label": "neutral",
+    "count": 1,
+    "headlines": [
+      "Computacenter joins FTSE 100 in reshuffle as index builds tech exposure"
+    ],
+    "updated": "2026-06-04"
   }
 }

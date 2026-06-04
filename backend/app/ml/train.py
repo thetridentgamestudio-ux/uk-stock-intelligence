@@ -198,16 +198,37 @@ def train_model(
     if calibrator_xgb:
         logger.info("Platt calibration fitted on %d samples", len(X_test))
 
+    # ── Stacking meta-learner (trained on OOF predictions) ─────────────────
+    meta_learner = None
+    if _LGB_AVAILABLE and lgb_model is not None:
+        # Generate out-of-fold predictions on test set for meta-learner training
+        from sklearn.linear_model import LogisticRegression
+
+        xgb_oof = model.predict_proba(X_test)[:, 1]
+        lgb_oof = lgb_model.predict_proba(X_test)[:, 1]
+        meta_features = np.column_stack([xgb_oof, lgb_oof])
+
+        meta_learner = LogisticRegression(C=1.0, solver="lbfgs", max_iter=500)
+        meta_learner.fit(meta_features, y_test)
+
+        # Evaluate meta-learner
+        meta_pred = meta_learner.predict(meta_features)
+        meta_accuracy = accuracy_score(y_test, meta_pred)
+        logger.info("Stacking meta-learner: %d OOF samples, accuracy=%.1f%%",
+                    len(X_test), meta_accuracy * 100)
+
     os.makedirs(os.path.dirname(model_path) or ".", exist_ok=True)
     joblib.dump({
         "model":           model,
         "lgb_model":       lgb_model,
+        "meta_learner":    meta_learner,
         "calibrator_xgb":  calibrator_xgb,
         "calibrator_lgb":  calibrator_lgb,
         "feature_cols":    feature_cols,
     }, model_path)
-    logger.info("Model saved to %s (accuracy=%.1f%%, features=%d)",
-                model_path, accuracy * 100, len(feature_cols))
+    logger.info("Model saved to %s (accuracy=%.1f%%, features=%d, meta-learner=%s)",
+                model_path, accuracy * 100, len(feature_cols),
+                "YES" if meta_learner else "NO")
 
     return {
         "accuracy":      accuracy,

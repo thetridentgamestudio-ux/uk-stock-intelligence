@@ -20,6 +20,7 @@ from ..services.market_sentiment import get_market_sentiment
 from ..services.sector_features import add_sector_features
 from ..services.news_sentiment import sentiment_confidence_nudge
 from ..services.macro_features import macro_confidence_nudge, get_macro_features
+from ..services.short_interest import short_interest_confidence_nudge
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +92,7 @@ def run_predictions(db: Session) -> list[dict]:
 
     model           = bundle["model"]
     lgb_model       = bundle.get("lgb_model")
+    meta_learner    = bundle.get("meta_learner")
     calibrator_xgb  = bundle.get("calibrator_xgb")
     calibrator_lgb  = bundle.get("calibrator_lgb")
     feature_cols    = bundle["feature_cols"]
@@ -191,7 +193,13 @@ def run_predictions(db: Session) -> list[dict]:
                     lgb_prob = float(calibrator_lgb.predict_proba([[raw_lgb]])[0][1])
                 else:
                     lgb_prob = raw_lgb
-                prob_up = (xgb_prob + lgb_prob) / 2
+
+                # ── Stacking meta-learner (trained on OOF predictions) ────────
+                if meta_learner is not None:
+                    meta_input = np.array([[xgb_prob, lgb_prob]])
+                    prob_up = float(meta_learner.predict_proba(meta_input)[0][1])
+                else:
+                    prob_up = (xgb_prob + lgb_prob) / 2
             else:
                 prob_up = xgb_prob
         except Exception as exc:
@@ -238,9 +246,12 @@ def run_predictions(db: Session) -> list[dict]:
         # ── Macro backdrop nudge (GBP, Brent, SP500, VFTSE) ──────────────────
         macro_nudge, macro_flag = macro_confidence_nudge(direction)
 
+        # ── Short interest nudge (FCA mandatory disclosures) ────────────────────
+        short_nudge, short_flag = short_interest_confidence_nudge(ticker, direction)
+
         confidence = round(
             min(99.0, max(50.0,
-                raw_conf + nudge + earnings_nudge + sentiment_nudge + macro_nudge
+                raw_conf + nudge + earnings_nudge + sentiment_nudge + macro_nudge + short_nudge
             )), 1
         )
 
@@ -263,6 +274,7 @@ def run_predictions(db: Session) -> list[dict]:
             "earnings_flag":   earnings_flag,
             "news_flag":       sentiment_flag,
             "macro_flag":      macro_flag,
+            "short_flag":      short_flag,
             "return_20d":      round(float(latest["return_20d"].values[0]) * 100, 2)
                                if "return_20d" in latest.columns else None,
         })

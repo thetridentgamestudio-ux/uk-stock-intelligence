@@ -26,6 +26,7 @@ class PredictionOut(BaseModel):
     sector_rank_1m: Optional[float] = None
     news_flag: Optional[str] = None
     macro_flag: Optional[str] = None
+    short_flag: Optional[str] = None
     return_20d: Optional[float] = None
     explanation: Optional[str] = None
 
