@@ -1,27 +1,27 @@
 {
   "BUT.L": {
-    "score": -0.3117,
+    "score": -0.6445,
     "label": "negative",
-    "count": 14,
+    "count": 18,
     "headlines": [
+      "China cracks down on soft porn, violence and materialism in viral micro dramas",
+      "Mark Zuckerberg's longest-serving employee on AI, jobs - and her boss",
       "Costly fuel pushes more Indians to buy electric cars but challenges remain",
-      "Wise under investigation over money laundering control concerns",
-      "Put a \u00a35 deposit on vapes to stop fires, say waste companies",
       "How 'confused' AI rollout hurts firms and baffles staff",
       "The rise of the fruit that tastes like custard"
     ],
-    "updated": "2026-06-04"
+    "updated": "2026-06-05"
   },
   "COST.L": {
-    "score": -0.7983,
-    "label": "negative",
+    "score": 0.0,
+    "label": "neutral",
     "count": 3,
     "headlines": [
       "'Six eggs used to be \u00a31' - why everyday essentials cost so much more now",
-      "In 23 months Labour has dragged the UK economy to its knees",
-      "\u2018Tipping point\u2019: CBI boss slams \u00a3345bn business tax burden amid \u2018cost of doing business\u2019 crisis"
+      "The \u00a35 coffee that tells a story of global economic turmoil",
+      "Gone for good: UK distributor behind Take That film goes bust"
     ],
-    "updated": "2026-06-04"
+    "updated": "2026-06-05"
   },
   "DOM.L": {
     "score": -0.965,
@@ -45,35 +45,34 @@
   "FOUR.L": {
     "score": -0.9584,
     "label": "negative",
-    "count": 1,
+    "count": 2,
     "headlines": [
+      "Musk's SpaceX share sale: Four things you need to know",
       "Water firm fined \u00a31.8m over parasite outbreak"
     ],
-    "updated": "2026-06-04"
+    "updated": "2026-06-05"
   },
   "GEN.L": {
     "score": 0.0,
     "label": "neutral",
-    "count": 3,
+    "count": 1,
     "headlines": [
-      "The \u00a35 coffee that tells a story of global economic turmoil",
-      "Many of us aren\u2019t saving enough for retirement. But there are ways to fix this",
-      "To YouTube and beyond: how online gen Z directors stormed Hollywood"
+      "The \u00a35 coffee that tells a story of global economic turmoil"
     ],
-    "updated": "2026-06-01"
+    "updated": "2026-06-05"
   },
   "HAS.L": {
-    "score": -0.3065,
+    "score": -0.2714,
     "label": "negative",
     "count": 31,
     "headlines": [
-      "UK banks blocked from cyber AI tool Mythos get offer from rival OpenAI",
+      "Mark Zuckerberg's longest-serving employee on AI, jobs - and her boss",
+      "Who is Elon Musk and what is his net worth?",
       "Love factually: Dating start-ups promise to cut the cheats",
       "Rise in solar panel sales as people 'want to save money'",
-      "Sir John Curtice: Why Labour's Brexit focus has shifted from Leavers to Remainers",
-      "Why it's now harder to get a Saturday job"
+      "Chippies turn to new species amid 'massive' cod price rise"
     ],
-    "updated": "2026-06-04"
+    "updated": "2026-06-05"
   },
   "INF.L": {
     "score": 0.0,
@@ -127,16 +126,16 @@
     "headlines": [
       "Trump insists Iran deal close despite strikes \u2013 The Latest"
     ],
-    "updated": "2026-06-04"
+    "updated": "2026-06-05"
   },
   "IPO.L": {
-    "score": -0.7299,
-    "label": "negative",
+    "score": 0.0,
+    "label": "neutral",
     "count": 1,
     "headlines": [
-      "SpaceX aims for world\u2019s largest IPO amid fears it is \u2018significantly overvalued\u2019 \u2013 business live"
+      "SpaceX targets biggest ever stock market debut, putting Musk on course to be trillionaire"
     ],
-    "updated": "2026-06-04"
+    "updated": "2026-06-05"
   },
   "SNR.L": {
     "score": -0.7299,
@@ -181,7 +180,7 @@
     "headlines": [
       "Costly fuel pushes more Indians to buy electric cars but challenges remain"
     ],
-    "updated": "2026-06-04"
+    "updated": "2026-06-05"
   },
   "BAG.L": {
     "score": 0.0,
@@ -215,9 +214,9 @@
     "label": "neutral",
     "count": 1,
     "headlines": [
-      "'It is by the grace of God that you find a diamond'"
+      "'By the grace of God': Miners dig on as lab-grown diamonds change market"
     ],
-    "updated": "2026-06-04"
+    "updated": "2026-06-05"
   },
   "INVP.L": {
     "score": 0.0,
@@ -227,5 +226,33 @@
       "Computacenter joins FTSE 100 in reshuffle as index builds tech exposure"
     ],
     "updated": "2026-06-04"
+  },
+  "III.L": {
+    "score": 0.0,
+    "label": "neutral",
+    "count": 1,
+    "headlines": [
+      "King Charles\u2019 cleaner ups dividend after revenue surge"
+    ],
+    "updated": "2026-06-05"
+  },
+  "MTO.L": {
+    "score": 0.0,
+    "label": "neutral",
+    "count": 1,
+    "headlines": [
+      "King Charles\u2019 cleaner ups dividend after revenue surge"
+    ],
+    "updated": "2026-06-05"
+  },
+  "WPP.L": {
+    "score": -0.9378,
+    "label": "negative",
+    "count": 2,
+    "headlines": [
+      "WPP Media CEO: Creative industries should bet big on London, the city of brilliant lunatics",
+      "Martin Sorrell calls WPP \u2018catatonic\u2019 as Goldman slaps sell rating on its own client"
+    ],
+    "updated": "2026-06-05"
   }
 }

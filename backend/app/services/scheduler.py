@@ -11,13 +11,9 @@ Both jobs also run on-demand from the CLI scripts:
 """
 import logging
 from contextlib import asynccontextmanager
-from datetime import date, timedelta
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
-
-from ..database import SessionLocal
-from ..services.data_fetcher import FTSE_STOCKS, fetch_prices, save_prices
 
 logger = logging.getLogger(__name__)
 
@@ -30,28 +26,48 @@ async def _monthly_retrain() -> None:
     """
     Retrain XGBoost + LightGBM ensemble with recency weighting.
     Runs at 06:00 on the 1st of each month — before the market opens.
-    Uses expanding window: all history kept, recent data upweighted 2×.
+
+    Spawned as subprocess to avoid joblib multiprocessing conflicting
+    with the asyncio event loop (same issue as FinBERT/PyTorch segfault).
+    After subprocess completes, clears the cached model bundle so the
+    server picks up the new model on next prediction request.
     """
-    logger.info("Scheduler: starting monthly model retrain...")
+    import subprocess
+    import os
+
+    script = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.dirname(os.path.abspath(__file__))
+        ))),
+        "scripts", "monthly_retrain.py"
+    )
+    python = "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3"
+    cwd = os.path.dirname(os.path.dirname(os.path.dirname(
+        os.path.dirname(os.path.abspath(__file__))
+    )))
+
+    logger.info("Scheduler: spawning monthly retrain as subprocess…")
     try:
-        from ..database import SessionLocal
-        from ..ml.train import train_model
-        from ..config import settings
-        db = SessionLocal()
-        try:
-            result = train_model(db, model_path=settings.model_path)
-            logger.info(
-                "Scheduler: retrain complete — acc=%.1f%% | features=%d | train_rows=%d",
-                result["accuracy"] * 100, result["feature_count"], result["train_samples"]
-            )
-        finally:
-            db.close()
-        # Reload model bundle in predictor (clear cached bundle)
-        import backend.app.services.predictor as _pred
-        _pred._bundle = None
-        logger.info("Scheduler: model bundle reloaded for live predictions")
+        result = subprocess.run(
+            [python, script],
+            capture_output=True,
+            text=True,
+            timeout=600,   # 10 minute timeout
+            cwd=cwd,
+        )
+        if result.returncode == 0:
+            logger.info("Scheduler: monthly retrain subprocess completed")
+            # Clear cached bundle — server picks up new model on next request
+            import backend.app.services.predictor as _pred
+            _pred._bundle = None
+            logger.info("Scheduler: model bundle cleared — new model loaded on next prediction")
+        else:
+            logger.error("Scheduler: retrain subprocess failed (rc=%d): %s",
+                         result.returncode, result.stderr[-500:] if result.stderr else "")
+    except subprocess.TimeoutExpired:
+        logger.error("Scheduler: monthly retrain timed out after 10 minutes")
     except Exception as exc:
-        logger.error("Scheduler: monthly retrain failed: %s", exc)
+        logger.error("Scheduler: monthly retrain error: %s", exc)
 
 
 # ── 08:00 — Morning news sentiment ────────────────────────────────────────────
@@ -60,76 +76,93 @@ async def _morning_news() -> None:
     """
     Fetch RSS headlines and score with FinBERT.
     Runs at 08:00 after RNS filings are published (RNS deadline is 07:00).
-    """
-    logger.info("Scheduler: starting morning news sentiment fetch…")
-    try:
-        from ..services.data_fetcher import FTSE_STOCKS
-        from ..services.news_sentiment import fetch_and_score_news
 
-        ticker_names = {
-            ticker: info["name"] if isinstance(info, dict) else info[0]
-            for ticker, info in FTSE_STOCKS.items()
-        }
-        results = fetch_and_score_news(ticker_names)
-        with_news = sum(1 for v in results.values() if v.get("count", 0) > 0)
-        logger.info("Scheduler: news sentiment done — %d stocks with coverage", with_news)
+    IMPORTANT: FinBERT (PyTorch) MUST run in a separate process.
+    Running PyTorch inside an async uvicorn process causes Segmentation fault: 11
+    due to OpenMP/MKL workers conflicting with asyncio's event loop.
+    We spawn the standalone script as a subprocess instead.
+    """
+    import subprocess
+    import os
+
+    script = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.dirname(os.path.abspath(__file__))
+        ))),
+        "scripts", "fetch_news_sentiment.py"
+    )
+    python = "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3"
+
+    logger.info("Scheduler: spawning news sentiment script as subprocess…")
+    try:
+        result = subprocess.run(
+            [python, script],
+            capture_output=True,
+            text=True,
+            timeout=300,   # 5 minute timeout
+            cwd=os.path.dirname(os.path.dirname(os.path.dirname(
+                os.path.dirname(os.path.abspath(__file__))
+            ))),
+        )
+        if result.returncode == 0:
+            logger.info("Scheduler: news sentiment subprocess completed successfully")
+        else:
+            logger.error("Scheduler: news subprocess failed (rc=%d): %s",
+                         result.returncode, result.stderr[-500:] if result.stderr else "")
+    except subprocess.TimeoutExpired:
+        logger.error("Scheduler: news sentiment subprocess timed out after 5 minutes")
     except Exception as exc:
-        logger.error("Scheduler: morning news failed: %s", exc)
+        logger.error("Scheduler: news sentiment subprocess error: %s", exc)
 
 
 # ── 17:15 — Full daily pipeline ───────────────────────────────────────────────
 
 async def _full_daily_pipeline() -> None:
     """
-    Full pipeline after LSE close:
-      1. Fetch today's prices (end=tomorrow so today is included)
-      2. Evaluate yesterday's predictions → accuracy tracking
-      3. Generate new predictions for tomorrow
-      4. Save predictions to DB
+    Full pipeline after LSE close — spawned as subprocess.
+
+    Reason: run_predictions() loads joblib/XGBoost models which use
+    multiprocessing internally. Running these inside the asyncio event
+    loop risks the same segfault seen with FinBERT. Subprocess isolation
+    is the safest pattern for any heavy ML work.
     """
-    logger.info("Scheduler: starting daily pipeline…")
-    today = date.today()
-    db    = SessionLocal()
+    import subprocess
+    import os
 
+    script = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.dirname(os.path.abspath(__file__))
+        ))),
+        "scripts", "run_daily_pipeline.py"
+    )
+    python = "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3"
+    cwd = os.path.dirname(os.path.dirname(os.path.dirname(
+        os.path.dirname(os.path.abspath(__file__))
+    )))
+
+    logger.info("Scheduler: spawning daily pipeline as subprocess…")
     try:
-        # ── 1. Fetch prices ──────────────────────────────────────────────────
-        fetched = 0
-        for ticker in FTSE_STOCKS:
-            df    = fetch_prices(ticker, today - timedelta(days=1), today + timedelta(days=1))
-            saved = save_prices(db, ticker, df)
-            if saved:
-                fetched += saved
-        logger.info("Scheduler: fetched %d new price rows", fetched)
-
-        # ── 2. Evaluate predictions ──────────────────────────────────────────
-        from ..services.accuracy_checker import evaluate_pending_predictions
-        result = evaluate_pending_predictions(db)
-        if result["evaluated"]:
-            acc = result["correct"] / result["evaluated"] * 100
-            logger.info("Scheduler: evaluated %d predictions — %.0f%% correct",
-                        result["evaluated"], acc)
-
-        # ── 3. Generate + save predictions ──────────────────────────────────
-        from ..services.predictor import run_predictions, save_predictions
-        predictions = run_predictions(db)
-        if predictions:
-            saved = save_predictions(db, predictions, today)
-            logger.info("Scheduler: saved %d new predictions for %s",
-                        saved, today + timedelta(days=1))
-            # Log top 3 picks
-            gainers = [p for p in predictions if p["direction"] == "BULLISH"][:3]
-            losers  = [p for p in predictions if p["direction"] == "BEARISH"][:3]
-            for p in gainers:
-                logger.info("  ▲ %s  %s  %.0f%%", p["ticker"], p["name"], p["confidence"])
-            for p in losers:
-                logger.info("  ▼ %s  %s  %.0f%%", p["ticker"], p["name"], p["confidence"])
+        result = subprocess.run(
+            [python, script],
+            capture_output=True,
+            text=True,
+            timeout=600,
+            cwd=cwd,
+        )
+        if result.returncode == 0:
+            logger.info("Scheduler: daily pipeline subprocess completed")
+            # Log last few lines of output (top picks)
+            output_lines = result.stdout.strip().split("\n")
+            for line in output_lines[-12:]:
+                if line.strip():
+                    logger.info("  %s", line)
         else:
-            logger.warning("Scheduler: no predictions generated — model trained?")
-
+            logger.error("Scheduler: pipeline subprocess failed (rc=%d): %s",
+                         result.returncode, result.stderr[-500:] if result.stderr else "")
+    except subprocess.TimeoutExpired:
+        logger.error("Scheduler: daily pipeline timed out after 10 minutes")
     except Exception as exc:
         logger.error("Scheduler: daily pipeline error: %s", exc)
-    finally:
-        db.close()
 
 
 # ── Lifespan hook — registers jobs when FastAPI starts ────────────────────────
