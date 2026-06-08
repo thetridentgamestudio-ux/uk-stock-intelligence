@@ -43,18 +43,29 @@ def _train_single_ensemble(
     weights: np.ndarray,
     scale_pos_weight: float,
     label: str = "",
+    hyperparams: dict | None = None,
 ) -> tuple:
     """
     Train XGBoost + LightGBM + CatBoost ensemble with given data and weights.
+    Supports custom hyperparameters for tuning.
     Returns (xgb_model, lgb_model, cb_model).
     """
+    if hyperparams is None:
+        hyperparams = {}
+
+    # Build params with defaults
+    lr = hyperparams.get("learning_rate", 0.04)
+    depth = hyperparams.get("max_depth", 4)
+    subsample = hyperparams.get("subsample", 0.8)
+    colsample = hyperparams.get("colsample_bytree", 0.8)
+
     # XGBoost
     xgb = XGBClassifier(
         n_estimators=400,
-        max_depth=4,
-        learning_rate=0.04,
-        subsample=0.8,
-        colsample_bytree=0.8,
+        max_depth=depth,
+        learning_rate=lr,
+        subsample=subsample,
+        colsample_bytree=colsample,
         min_child_weight=3,
         gamma=0.1,
         scale_pos_weight=scale_pos_weight,
@@ -69,10 +80,10 @@ def _train_single_ensemble(
     if _LGB_AVAILABLE:
         lgb_m = lgb.LGBMClassifier(
             n_estimators=400,
-            max_depth=4,
-            learning_rate=0.04,
-            subsample=0.8,
-            colsample_bytree=0.8,
+            max_depth=depth,
+            learning_rate=lr,
+            subsample=subsample,
+            colsample_bytree=colsample,
             min_child_samples=20,
             scale_pos_weight=scale_pos_weight,
             random_state=42,
@@ -85,9 +96,9 @@ def _train_single_ensemble(
     if _CB_AVAILABLE:
         cb_m = cb.CatBoostClassifier(
             iterations=400,
-            depth=4,
-            learning_rate=0.04,
-            subsample=0.8,
+            depth=depth,
+            learning_rate=lr,
+            subsample=subsample,
             scale_pos_weight=scale_pos_weight,
             random_state=42,
             verbose=0,
@@ -96,10 +107,10 @@ def _train_single_ensemble(
         cb_m.fit(X_train, y_train, sample_weight=weights)
 
     logger.info(
-        "Trained %sensemble (XGB + LGB + %s) — %d rows | scale_pos_weight=%.3f",
+        "Trained %sensemble (XGB + LGB + %s) — %d rows | scale_pos_weight=%.3f | lr=%.3f depth=%d",
         f"{label} " if label else "",
         "CB" if cb_m is not None else "no CB",
-        len(X_train), scale_pos_weight,
+        len(X_train), scale_pos_weight, lr, depth,
     )
     return xgb, lgb_m, cb_m
 
