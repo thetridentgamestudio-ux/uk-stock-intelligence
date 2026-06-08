@@ -75,6 +75,7 @@ async def _monthly_retrain() -> None:
 async def _morning_news() -> None:
     """
     Fetch RSS headlines and score with FinBERT.
+    Also fetches short interest data from yfinance.
     Runs at 08:00 after RNS filings are published (RNS deadline is 07:00).
 
     IMPORTANT: FinBERT (PyTorch) MUST run in a separate process.
@@ -84,6 +85,8 @@ async def _morning_news() -> None:
     """
     import subprocess
     import os
+    from ..services.short_interest import update_short_interest_cache
+    from ..services.data_fetcher import FTSE_STOCKS
 
     script = os.path.join(
         os.path.dirname(os.path.dirname(os.path.dirname(
@@ -113,6 +116,14 @@ async def _morning_news() -> None:
         logger.error("Scheduler: news sentiment subprocess timed out after 5 minutes")
     except Exception as exc:
         logger.error("Scheduler: news sentiment subprocess error: %s", exc)
+
+    # Also fetch short interest data (quick, synchronous)
+    try:
+        logger.info("Scheduler: fetching short interest data…")
+        ticker_list = list(FTSE_STOCKS.keys())
+        update_short_interest_cache(ticker_list)
+    except Exception as exc:
+        logger.error("Scheduler: short interest fetch failed: %s", exc)
 
 
 # ── 17:15 — Full daily pipeline ───────────────────────────────────────────────

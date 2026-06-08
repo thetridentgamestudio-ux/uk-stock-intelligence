@@ -18,9 +18,10 @@ from ..ml.features import (
 from ..services.data_fetcher import FTSE_STOCKS
 from ..services.market_sentiment import get_market_sentiment
 from ..services.sector_features import add_sector_features
-from ..services.news_sentiment import sentiment_confidence_nudge
+from ..services.news_sentiment import sentiment_confidence_nudge, fetch_and_score_news
 from ..services.macro_features import macro_confidence_nudge, get_macro_features
-from ..services.short_interest import short_interest_confidence_nudge
+from ..services.short_interest import short_interest_confidence_nudge, get_short_interest
+from ..services.director_buying import detect_director_buying, director_buying_nudge
 
 logger = logging.getLogger(__name__)
 
@@ -313,6 +314,19 @@ def run_predictions(db: Session) -> list[dict]:
         # ── News sentiment nudge (FinBERT on RNS + RSS) ───────────────────────
         sentiment_nudge, sentiment_flag = sentiment_confidence_nudge(ticker, direction)
 
+        # ── Director buying signal (FCA mandatory PDMR disclosures) ────────────
+        director_nudge = 0.0
+        director_flag = None
+        try:
+            # Get recent RNS headlines for this stock
+            rns_cache = fetch_and_score_news([ticker])
+            if ticker in rns_cache:
+                headlines = rns_cache[ticker].get("headlines", [])
+                director_signal = detect_director_buying(headlines, ticker)
+                director_nudge, director_flag = director_buying_nudge(ticker, direction, director_signal)
+        except Exception as exc:
+            logger.debug(f"Director buying check failed for {ticker}: {exc}")
+
         # ── Macro backdrop nudge (GBP, Brent, SP500, VFTSE) ──────────────────
         macro_nudge, macro_flag = macro_confidence_nudge(direction)
 
@@ -321,7 +335,7 @@ def run_predictions(db: Session) -> list[dict]:
 
         confidence = round(
             min(99.0, max(50.0,
-                raw_conf + nudge + earnings_nudge + sentiment_nudge + macro_nudge + short_nudge
+                raw_conf + nudge + earnings_nudge + sentiment_nudge + director_nudge + macro_nudge + short_nudge
             )), 1
         )
 
@@ -343,6 +357,7 @@ def run_predictions(db: Session) -> list[dict]:
             "market_regime":   regime,
             "earnings_flag":   earnings_flag,
             "news_flag":       sentiment_flag,
+            "director_flag":   director_flag,
             "macro_flag":      macro_flag,
             "short_flag":      short_flag,
             "return_20d":      round(float(latest["return_20d"].values[0]) * 100, 2)
