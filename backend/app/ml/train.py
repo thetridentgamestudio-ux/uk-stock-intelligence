@@ -15,6 +15,12 @@ try:
 except ImportError:
     _LGB_AVAILABLE = False
 
+try:
+    import catboost as cb
+    _CB_AVAILABLE = True
+except ImportError:
+    _CB_AVAILABLE = False
+
 from .features import (
     CS_RANK_FEATURES,
     FEATURE_COLS,
@@ -39,9 +45,10 @@ def _train_single_ensemble(
     label: str = "",
 ) -> tuple:
     """
-    Train one XGBoost + LightGBM pair with given data and weights.
-    Returns (xgb_model, lgb_model).
+    Train XGBoost + LightGBM + CatBoost ensemble with given data and weights.
+    Returns (xgb_model, lgb_model, cb_model).
     """
+    # XGBoost
     xgb = XGBClassifier(
         n_estimators=400,
         max_depth=4,
@@ -57,6 +64,7 @@ def _train_single_ensemble(
     )
     xgb.fit(X_train, y_train, sample_weight=weights, verbose=False)
 
+    # LightGBM
     lgb_m = None
     if _LGB_AVAILABLE:
         lgb_m = lgb.LGBMClassifier(
@@ -72,12 +80,28 @@ def _train_single_ensemble(
         )
         lgb_m.fit(X_train, y_train, sample_weight=weights)
 
+    # CatBoost — better at non-linear relationships + categorical features
+    cb_m = None
+    if _CB_AVAILABLE:
+        cb_m = cb.CatBoostClassifier(
+            iterations=400,
+            depth=4,
+            learning_rate=0.04,
+            subsample=0.8,
+            scale_pos_weight=scale_pos_weight,
+            random_state=42,
+            verbose=0,
+            thread_count=-1,  # Use all cores
+        )
+        cb_m.fit(X_train, y_train, sample_weight=weights)
+
     logger.info(
-        "Trained %sensemble — %d rows | scale_pos_weight=%.3f",
+        "Trained %sensemble (XGB + LGB + %s) — %d rows | scale_pos_weight=%.3f",
         f"{label} " if label else "",
+        "CB" if cb_m is not None else "no CB",
         len(X_train), scale_pos_weight,
     )
-    return xgb, lgb_m
+    return xgb, lgb_m, cb_m
 
 
 def _compute_recency_weights(dates: pd.DatetimeIndex) -> np.ndarray:
@@ -296,22 +320,46 @@ def train_model(
                 pos, neg, scale_pos_weight)
 
     # ── Full-universe model (baseline + fallback) ─────────────────────────────
-    model, lgb_model = _train_single_ensemble(
+    model, lgb_model, cb_model = _train_single_ensemble(
         X_train, y_train, train_weights, scale_pos_weight, label="full"
     )
     xgb_accuracy = accuracy_score(y_test, model.predict(X_test))
 
+    xgb_prob = model.predict_proba(X_test)[:, 1]
+    lgb_prob = None
+    cb_prob = None
+
     if lgb_model is not None:
         lgb_accuracy = accuracy_score(y_test, lgb_model.predict(X_test))
-        xgb_prob = model.predict_proba(X_test)[:, 1]
         lgb_prob = lgb_model.predict_proba(X_test)[:, 1]
-        ensemble_pred = ((xgb_prob + lgb_prob) / 2 >= 0.5).astype(int)
-        accuracy = accuracy_score(y_test, ensemble_pred)
+    else:
+        lgb_accuracy = 0.0
+
+    if cb_model is not None:
+        cb_accuracy = accuracy_score(y_test, cb_model.predict(X_test))
+        cb_prob = cb_model.predict_proba(X_test)[:, 1]
+    else:
+        cb_accuracy = 0.0
+
+    # Ensemble: average all available models
+    if lgb_prob is not None and cb_prob is not None:
+        ensemble_prob = (xgb_prob + lgb_prob + cb_prob) / 3
+    elif lgb_prob is not None:
+        ensemble_prob = (xgb_prob + lgb_prob) / 2
+    else:
+        ensemble_prob = xgb_prob
+
+    ensemble_pred = (ensemble_prob >= 0.5).astype(int)
+    accuracy = accuracy_score(y_test, ensemble_pred)
+
+    if lgb_prob is not None and cb_prob is not None:
+        logger.info("Full model — XGB=%.1f%%  LGB=%.1f%%  CB=%.1f%%  Ensemble=%.1f%%",
+                    xgb_accuracy * 100, lgb_accuracy * 100, cb_accuracy * 100, accuracy * 100)
+    elif lgb_prob is not None:
         logger.info("Full model — XGB=%.1f%%  LGB=%.1f%%  Ensemble=%.1f%%",
                     xgb_accuracy * 100, lgb_accuracy * 100, accuracy * 100)
     else:
-        accuracy = xgb_accuracy
-        logger.info("Full model — XGB=%.1f%% (LGB unavailable)", accuracy * 100)
+        logger.info("Full model — XGB=%.1f%% (LGB/CB unavailable)", accuracy * 100)
 
     # ── Regime-conditional models ─────────────────────────────────────────────
     # Label each training row with the market regime on that date.
@@ -340,7 +388,7 @@ def train_model(
         pos_r = int((ry == 1).sum())
         spw_r = neg_r / pos_r if pos_r > 0 else 1.0
 
-        rxgb, rlgb = _train_single_ensemble(rX, ry, rw, spw_r, label=regime)
+        rxgb, rlgb, rcb = _train_single_ensemble(rX, ry, rw, spw_r, label=regime)
 
         # Evaluate on test set rows matching this regime
         test_labelled = add_regime_labels(test)
@@ -349,11 +397,24 @@ def train_model(
             rX_test = regime_test[feature_cols]
             ry_test = regime_test["target"]
             r_xgb_prob = rxgb.predict_proba(rX_test)[:, 1]
+
+            r_lgb_prob = None
+            r_cb_prob = None
+
             if rlgb:
                 r_lgb_prob = rlgb.predict_proba(rX_test)[:, 1]
-                r_pred = ((r_xgb_prob + r_lgb_prob) / 2 >= 0.5).astype(int)
+            if rcb:
+                r_cb_prob = rcb.predict_proba(rX_test)[:, 1]
+
+            # Ensemble
+            if r_lgb_prob is not None and r_cb_prob is not None:
+                r_pred_prob = (r_xgb_prob + r_lgb_prob + r_cb_prob) / 3
+            elif r_lgb_prob is not None:
+                r_pred_prob = (r_xgb_prob + r_lgb_prob) / 2
             else:
-                r_pred = (r_xgb_prob >= 0.5).astype(int)
+                r_pred_prob = r_xgb_prob
+
+            r_pred = (r_pred_prob >= 0.5).astype(int)
             r_acc = accuracy_score(ry_test, r_pred)
             logger.info(
                 "Regime %s model: %d train / %d test → %.1f%% accuracy",
@@ -362,7 +423,7 @@ def train_model(
         else:
             logger.info("Regime %s model: %d train rows", regime, n)
 
-        regime_models[regime] = {"xgb": rxgb, "lgb": rlgb}
+        regime_models[regime] = {"xgb": rxgb, "lgb": rlgb, "cb": rcb}
 
     logger.info(
         "Regime models trained: %s",

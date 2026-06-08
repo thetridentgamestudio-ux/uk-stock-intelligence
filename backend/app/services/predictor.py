@@ -108,11 +108,13 @@ def run_predictions(db: Session) -> list[dict]:
     if regime in regime_models:
         active_models  = regime_models[regime]
         model          = active_models["xgb"]
-        lgb_model      = active_models["lgb"]
+        lgb_model      = active_models.get("lgb")
+        cb_model       = active_models.get("cb")
         logger.info("Using %s regime model for predictions", regime)
     else:
-        model    = bundle["model"]
+        model     = bundle["model"]
         lgb_model = bundle.get("lgb_model")
+        cb_model  = bundle.get("cb_model")
         logger.info(
             "No regime model for %s — using full model (available: %s)",
             regime, list(regime_models.keys()) or "none",
@@ -237,12 +239,15 @@ def run_predictions(db: Session) -> list[dict]:
         X = latest[feature_cols]
 
         try:
+            # XGBoost
             raw_xgb = float(model.predict_proba(X)[0][1])
             if calibrator_xgb is not None:
                 xgb_prob = float(calibrator_xgb.predict_proba([[raw_xgb]])[0][1])
             else:
                 xgb_prob = raw_xgb
 
+            # LightGBM
+            lgb_prob = None
             if lgb_model is not None:
                 raw_lgb = float(lgb_model.predict_proba(X)[0][1])
                 if calibrator_lgb is not None:
@@ -250,14 +255,23 @@ def run_predictions(db: Session) -> list[dict]:
                 else:
                     lgb_prob = raw_lgb
 
-                # ── Stacking meta-learner (trained on OOF predictions) ────────
-                if meta_learner is not None:
-                    meta_input = np.array([[xgb_prob, lgb_prob]])
-                    prob_up = float(meta_learner.predict_proba(meta_input)[0][1])
-                else:
-                    prob_up = (xgb_prob + lgb_prob) / 2
+            # CatBoost
+            cb_prob = None
+            if cb_model is not None:
+                try:
+                    raw_cb = float(cb_model.predict_proba(X)[0][1])
+                    cb_prob = raw_cb  # CatBoost doesn't have calibrator yet
+                except Exception:
+                    pass
+
+            # ── Ensemble: average all available models ────────────────────────
+            if lgb_prob is not None and cb_prob is not None:
+                prob_up = (xgb_prob + lgb_prob + cb_prob) / 3
+            elif lgb_prob is not None:
+                prob_up = (xgb_prob + lgb_prob) / 2
             else:
                 prob_up = xgb_prob
+
         except Exception as exc:
             logger.debug("Prediction failed for %s: %s", ticker, exc)
             continue
