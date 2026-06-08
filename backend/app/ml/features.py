@@ -73,12 +73,35 @@ _PHASE3_FEATURES = [
     "roll_spread",          # Roll bid-ask spread estimate from return serial covariance
 
     # Calendar effects (turn-of-month, day-of-week — Springer 2024)
+    # NOTE: downweighted in training — tends to overfit without adding signal
     "day_of_week",          # 0=Mon … 4=Fri
     "turn_of_month",        # 1 if within 2 trading days of month start/end
     "month_of_year",        # 1–12 (January effect, April UK tax year)
 ]
 
-FEATURE_COLS = _BASE_FEATURES + _NEW_FEATURES + _PHASE2_FEATURES + _PHASE3_FEATURES
+# ── Phase-4 signals (new for 70% accuracy push) ──────────────────────────────────
+_PHASE4_FEATURES = [
+    # Volume analysis — better breakout confirmation
+    "rel_volume_percentile",     # volume percentile vs 20d history (0-100)
+    "volume_price_confirm",      # binary: price up AND volume > 20d avg
+
+    # Mean reversion signals
+    "rsi_mean_revert",           # +1 if RSI<25, -1 if RSI>75, else 0
+
+    # Intraday conviction
+    "high_low_range_ratio",      # (high - low) / close (normalized volatility)
+    "close_to_high_ratio",       # (close - low) / (high - low) (where price closed)
+]
+
+# ── Cross-sectional momentum (computed AFTER per-stock, across all stocks) ──────
+# Not in FEATURE_COLS until populated in train.py / predictor.py
+_MOMENTUM_FEATURES = [
+    "sector_momentum_delta",      # return_1d - sector_median_return_1d
+    "market_momentum_delta",      # return_1d - FTSE_return_1d
+]
+
+FEATURE_COLS = _BASE_FEATURES + _NEW_FEATURES + _PHASE2_FEATURES + _PHASE3_FEATURES + _PHASE4_FEATURES
+# NOTE: _MOMENTUM_FEATURES are added AFTER data loading in train.py and predictor.py
 
 # Cross-sectional rank features — appended AFTER per-stock feature computation
 # (computed in train.py / predictor.py across the full universe per date)
@@ -333,6 +356,40 @@ def compute_features(
     df["turn_of_month"] = (
         (day_of_month <= 2) | (day_of_month >= days_in_month - 1)
     ).astype(float)
+
+    # ── Phase-4: Volume and Momentum Analysis ─────────────────────────────────
+
+    # Relative volume percentile: where current volume ranks in 20d history
+    vol_20d_min = volume.rolling(20).min()
+    vol_20d_max = volume.rolling(20).max()
+    vol_20d_range = (vol_20d_max - vol_20d_min).replace(0, 1)
+    df["rel_volume_percentile"] = 100 * (volume - vol_20d_min) / vol_20d_range
+    df["rel_volume_percentile"] = df["rel_volume_percentile"].clip(0, 100)
+
+    # Volume-price confirmation: price rising + volume above average = bullish
+    price_up = (close > close.shift(1)).astype(float)
+    vol_above_avg = (volume > vol_ma20).astype(float)
+    df["volume_price_confirm"] = (price_up * vol_above_avg).astype(int)
+
+    # Mean reversion signal: extreme RSI predicts reversal
+    df["rsi_mean_revert"] = 0.0
+    df.loc[df["rsi_14"] < 25, "rsi_mean_revert"] = 1.0   # oversold → revert up
+    df.loc[df["rsi_14"] > 75, "rsi_mean_revert"] = -1.0  # overbought → revert down
+
+    # Intraday conviction: where did price close within today's range?
+    # 0 = closed at low (weak), 1 = closed at high (strong)
+    range_today = (high - low).replace(0, np.nan)
+    df["close_to_high_ratio"] = (close - low) / range_today
+
+    # Volatility: range as % of close price
+    df["high_low_range_ratio"] = (high - low) / close
+
+    # ── Placeholder for cross-sectional features ──────────────────────────────
+    # These are computed AFTER all stocks' per-stock features in train.py/predictor.py
+    # They compare each stock to its peers and the market
+    # Initialize to 0 (neutral) — populated in train.py / predictor.py
+    df["sector_momentum_delta"] = 0.0
+    df["market_momentum_delta"] = 0.0
 
     # ── Target ────────────────────────────────────────────────────────────────
 

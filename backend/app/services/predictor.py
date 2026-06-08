@@ -158,6 +158,42 @@ def run_predictions(db: Session) -> list[dict]:
             "features_df": features,
         })
 
+    # ── Compute momentum-relative-to-peers for latest row of all stocks ───────
+    if per_stock:
+        latest_rows = pd.concat([
+            s["features_df"].iloc[[-1]].assign(ticker=s["ticker"]) for s in per_stock
+        ])
+
+        # Sector average momentum
+        sector_map = {}
+        for t, info in FTSE_STOCKS.items():
+            sector_map[t] = info.get("sector", "Other") if isinstance(info, dict) else (info[1] if len(info) > 1 else "Other")
+
+        for ticker in [s["ticker"] for s in per_stock]:
+            if ticker in sector_map:
+                sector = sector_map[ticker]
+                sector_tickers = [t for t in sector_map if sector_map[t] == sector]
+                sector_data = latest_rows[latest_rows["ticker"].isin(sector_tickers)]
+                sector_avg = sector_data["return_1d"].mean() if len(sector_data) > 0 else 0
+
+                for stock in per_stock:
+                    if stock["ticker"] == ticker:
+                        stock_ret = float(stock["features_df"].iloc[-1]["return_1d"])
+                        delta = (stock_ret - sector_avg) if pd.notna(stock_ret) else 0
+                        stock["features_df"].loc[stock["features_df"].index[-1], "sector_momentum_delta"] = delta
+
+        # Market momentum (FTSE)
+        try:
+            ftse_today = get_market_sentiment()
+            ftse_ret = ftse_today.get("ftse_return_pct", 0) / 100
+        except Exception:
+            ftse_ret = 0
+
+        for stock in per_stock:
+            stock_ret = float(stock["features_df"].iloc[-1]["return_1d"])
+            delta = (stock_ret - ftse_ret) if pd.notna(stock_ret) else 0
+            stock["features_df"].loc[stock["features_df"].index[-1], "market_momentum_delta"] = delta
+
     if not per_stock:
         return []
 

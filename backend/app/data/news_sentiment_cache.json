@@ -1,27 +1,29 @@
 {
   "BUT.L": {
-    "score": -0.6445,
+    "score": -0.7046,
     "label": "negative",
-    "count": 18,
+    "count": 17,
     "headlines": [
+      "Cake sheds are making bakers \u00a31,000 a week - but the dream might be over",
       "China cracks down on soft porn, violence and materialism in viral micro dramas",
       "Mark Zuckerberg's longest-serving employee on AI, jobs - and her boss",
-      "Costly fuel pushes more Indians to buy electric cars but challenges remain",
       "How 'confused' AI rollout hurts firms and baffles staff",
       "The rise of the fruit that tastes like custard"
     ],
-    "updated": "2026-06-05"
+    "updated": "2026-06-08"
   },
   "COST.L": {
-    "score": 0.0,
-    "label": "neutral",
-    "count": 3,
+    "score": -0.8869,
+    "label": "negative",
+    "count": 5,
     "headlines": [
       "'Six eggs used to be \u00a31' - why everyday essentials cost so much more now",
+      "Advice service demand rises amid housing crisis",
       "The \u00a35 coffee that tells a story of global economic turmoil",
-      "Gone for good: UK distributor behind Take That film goes bust"
+      "UK companies opting to hire temporary workers over permanent staff, recruitment firms say",
+      "Food inflation: First signs of energy cost surge feed through to supermarket shelves as discounts fail to stem price growth"
     ],
-    "updated": "2026-06-05"
+    "updated": "2026-06-08"
   },
   "DOM.L": {
     "score": -0.965,
@@ -43,14 +45,13 @@
     "updated": "2026-06-04"
   },
   "FOUR.L": {
-    "score": -0.9584,
-    "label": "negative",
-    "count": 2,
+    "score": 0.0,
+    "label": "neutral",
+    "count": 1,
     "headlines": [
-      "Musk's SpaceX share sale: Four things you need to know",
-      "Water firm fined \u00a31.8m over parasite outbreak"
+      "I was applying for hundreds of jobs - this tip helped me get one"
     ],
-    "updated": "2026-06-05"
+    "updated": "2026-06-08"
   },
   "GEN.L": {
     "score": 0.0,
@@ -59,38 +60,38 @@
     "headlines": [
       "The \u00a35 coffee that tells a story of global economic turmoil"
     ],
-    "updated": "2026-06-05"
+    "updated": "2026-06-08"
   },
   "HAS.L": {
-    "score": -0.2714,
-    "label": "negative",
-    "count": 31,
+    "score": -0.0534,
+    "label": "neutral",
+    "count": 27,
     "headlines": [
+      "'No dead ends': What the Dutch can teach us about tackling youth unemployment",
+      "Final pieces fired at Denby as production ends",
       "Mark Zuckerberg's longest-serving employee on AI, jobs - and her boss",
       "Who is Elon Musk and what is his net worth?",
-      "Love factually: Dating start-ups promise to cut the cheats",
-      "Rise in solar panel sales as people 'want to save money'",
-      "Chippies turn to new species amid 'massive' cod price rise"
+      "Love factually: Dating start-ups promise to cut the cheats"
     ],
-    "updated": "2026-06-05"
+    "updated": "2026-06-08"
   },
   "INF.L": {
     "score": 0.0,
     "label": "neutral",
     "count": 1,
     "headlines": [
-      "Abusive passengers could be banned from all airlines under new proposal"
+      "Britain is a swamp of lies and disinformation \u2013 and we got here on the Brexit bus | Jonathan Freedland"
     ],
-    "updated": "2026-06-04"
+    "updated": "2026-06-08"
   },
   "PINT.L": {
-    "score": 0.0,
-    "label": "neutral",
+    "score": -0.7109,
+    "label": "negative",
     "count": 1,
     "headlines": [
-      "Why is Lidl opening a pub?"
+      "Burnham vows to cut the price of a pint as he turns on Labour tax rises"
     ],
-    "updated": "2026-06-04"
+    "updated": "2026-06-08"
   },
   "SHAW.L": {
     "score": 0.0,
@@ -126,16 +127,16 @@
     "headlines": [
       "Trump insists Iran deal close despite strikes \u2013 The Latest"
     ],
-    "updated": "2026-06-05"
+    "updated": "2026-06-08"
   },
   "IPO.L": {
     "score": 0.0,
     "label": "neutral",
     "count": 1,
     "headlines": [
-      "SpaceX targets biggest ever stock market debut, putting Musk on course to be trillionaire"
+      "SpaceX IPO: how can I buy shares, and what are the risks?"
     ],
-    "updated": "2026-06-05"
+    "updated": "2026-06-08"
   },
   "SNR.L": {
     "score": -0.7299,
@@ -147,13 +148,14 @@
     "updated": "2026-06-04"
   },
   "BA.L": {
-    "score": 0.0,
+    "score": -0.0974,
     "label": "neutral",
-    "count": 1,
+    "count": 2,
     "headlines": [
-      "XFolio AI Acquires Absolute Payment Solutions to Unify Treasury and Payments for UK Corporates"
+      "Air fare rises \u2018inevitable\u2019 as airlines face extra $100bn jet fuel bill this year",
+      "Air fares to soar again if fuel costs stay high, British Airways chief warns"
     ],
-    "updated": "2026-06-03"
+    "updated": "2026-06-08"
   },
   "BOY.L": {
     "score": 0.0,
@@ -183,13 +185,14 @@
     "updated": "2026-06-05"
   },
   "BAG.L": {
-    "score": 0.0,
-    "label": "neutral",
-    "count": 1,
+    "score": -0.4921,
+    "label": "negative",
+    "count": 2,
     "headlines": [
-      "Americans should be reassured by high prices, apparently. Does Trump's team really think we're that stupid | Arwa Mahdawi"
+      "Horrific, unregulated, and very profitable. The companies making cash from England\u2019s children in care | George Monbiot",
+      "\u2018Poisoned\u2019 AI: the ChatGPT shopping scams that lead to fake websites"
     ],
-    "updated": "2026-06-04"
+    "updated": "2026-06-08"
   },
   "BARC.L": {
     "score": 0.0,
@@ -216,7 +219,7 @@
     "headlines": [
       "'By the grace of God': Miners dig on as lab-grown diamonds change market"
     ],
-    "updated": "2026-06-05"
+    "updated": "2026-06-08"
   },
   "INVP.L": {
     "score": 0.0,
@@ -254,5 +257,50 @@
       "Martin Sorrell calls WPP \u2018catatonic\u2019 as Goldman slaps sell rating on its own client"
     ],
     "updated": "2026-06-05"
+  },
+  "AV.L": {
+    "score": -0.905,
+    "label": "negative",
+    "count": 1,
+    "headlines": [
+      "Aviva detects record \u00a3230m in bogus insurance claims as use of AI rises"
+    ],
+    "updated": "2026-06-08"
+  },
+  "GROW.L": {
+    "score": 0.0,
+    "label": "neutral",
+    "count": 1,
+    "headlines": [
+      "Social housing lists \u2018would take 119 years to clear at current building rate\u2019"
+    ],
+    "updated": "2026-06-08"
+  },
+  "RIO.L": {
+    "score": 0.5876,
+    "label": "positive",
+    "count": 1,
+    "headlines": [
+      "Aviation industry looks skywards as leaders fly in for Rio summit"
+    ],
+    "updated": "2026-06-08"
+  },
+  "TATE.L": {
+    "score": 0.0,
+    "label": "neutral",
+    "count": 1,
+    "headlines": [
+      "Tate & Lyle confirms \u00a32.7bn takeover by US rival"
+    ],
+    "updated": "2026-06-08"
+  },
+  "TSCO.L": {
+    "score": -0.9354,
+    "label": "negative",
+    "count": 1,
+    "headlines": [
+      "Food inflation: First signs of energy cost surge feed through to supermarket shelves as discounts fail to stem price growth"
+    ],
+    "updated": "2026-06-08"
   }
 }

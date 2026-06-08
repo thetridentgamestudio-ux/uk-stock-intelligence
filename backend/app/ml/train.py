@@ -18,6 +18,7 @@ except ImportError:
 from .features import (
     CS_RANK_FEATURES,
     FEATURE_COLS,
+    _MOMENTUM_FEATURES,
     add_cross_sectional_ranks,
     compute_features,
 )
@@ -138,7 +139,80 @@ def load_training_data(db: Session) -> pd.DataFrame:
     # Add cross-sectional rank features (per-date percentile rank across universe)
     combined = add_cross_sectional_ranks(combined)
 
+    # Add momentum-relative-to-peers features
+    combined = _add_momentum_features(combined)
+
     return combined
+
+
+def _add_momentum_features(data: pd.DataFrame) -> pd.DataFrame:
+    """
+    Compute sector_momentum_delta and market_momentum_delta for each row.
+    These are relative momentum signals: stock return minus peer/market return.
+    """
+    from ..services.data_fetcher import FTSE_STOCKS
+    import yfinance as yf
+
+    data = data.copy()
+
+    # Fetch FTSE market return for each date
+    try:
+        ftse_hist = yf.Ticker("^FTSE").history(start="2020-01-01")["Close"]
+        ftse_ret = ftse_hist.pct_change(1)
+        ftse_ret.index = pd.to_datetime(ftse_ret.index.date)
+    except Exception as exc:
+        logger.warning("Could not fetch FTSE returns for market momentum: %s", exc)
+        ftse_ret = pd.Series(dtype=float)
+
+    # Build sector mapping
+    sector_map = {}
+    for ticker, info in FTSE_STOCKS.items():
+        if isinstance(info, dict):
+            sector = info.get("sector", "Other")
+        else:
+            sector = info[1] if len(info) > 1 else "Other"
+        sector_map[ticker] = sector
+
+    # Compute sector averages per date and fill momentum features
+    for date in data.index.unique():
+        # Get all rows for this date
+        date_mask = (data.index == date)
+        date_data = data[date_mask].copy()
+
+        if len(date_data) == 0:
+            continue
+
+        # Compute sector averages for this date
+        sector_avgs = {}
+        for sector in set(sector_map.values()):
+            sector_tickers = [t for t in sector_map if sector_map[t] == sector]
+            sector_ret_vals = date_data[date_data["ticker"].isin(sector_tickers)]["return_1d"]
+            if len(sector_ret_vals) > 0:
+                sector_avgs[sector] = sector_ret_vals.mean()
+            else:
+                sector_avgs[sector] = 0.0
+
+        # Fill momentum features for all stocks on this date
+        for idx, row in date_data.iterrows():
+            ticker = row.get("ticker")
+            try:
+                stock_ret = float(row["return_1d"])
+            except (ValueError, TypeError, KeyError):
+                continue
+
+            # Sector momentum
+            if ticker in sector_map and not np.isnan(stock_ret):
+                sector = sector_map[ticker]
+                sector_avg = sector_avgs.get(sector, 0.0)
+                data.loc[idx, "sector_momentum_delta"] = (stock_ret - sector_avg)
+
+            # Market momentum
+            if not np.isnan(stock_ret) and date in ftse_ret.index:
+                market_ret = float(ftse_ret.loc[date])
+                data.loc[idx, "market_momentum_delta"] = (stock_ret - market_ret)
+
+    logger.info("Computed momentum-relative-to-peers features")
+    return data
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -148,12 +222,17 @@ def load_training_data(db: Session) -> pd.DataFrame:
 def _resolve_feature_cols(data: pd.DataFrame) -> list[str]:
     """
     Return the list of feature columns actually present and non-empty in `data`.
-    CS-rank features are included if they were computed.
+    CS-rank features and momentum features are included if they were computed.
     """
     base = FEATURE_COLS.copy()
 
     # Cross-sectional ranks — include if computed
     for col in CS_RANK_FEATURES:
+        if col in data.columns:
+            base.append(col)
+
+    # Momentum features — include if computed
+    for col in _MOMENTUM_FEATURES:
         if col in data.columns:
             base.append(col)
 
