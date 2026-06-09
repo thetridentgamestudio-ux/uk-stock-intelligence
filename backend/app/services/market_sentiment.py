@@ -57,29 +57,48 @@ def get_market_sentiment() -> dict:
         if vix < 15:
             vix_level = "LOW"
             vix_score = +1
+        elif vix < 20:
+            vix_level = "MODERATE"
+            vix_score = 0
         elif vix < 25:
             vix_level = "ELEVATED"
-            vix_score = 0
-        else:
+            vix_score = -0.5
+        elif vix < 30:
             vix_level = "HIGH"
             vix_score = -1
+        else:
+            vix_level = "EXTREME"
+            vix_score = -2
 
-        # FTSE momentum score
+        # FTSE momentum score (detect crash days more aggressively)
         ftse_score = 0
-        if f5d > 1.0:
+
+        # 1-day move — crash days show large 1d drops
+        if f1d < -3.0:  # Crash detected (-3% in 1 day is severe)
+            ftse_score -= 2
+        elif f1d < -1.5:
+            ftse_score -= 1.5
+        elif f1d > 2.0:
             ftse_score += 1
+
+        # 5-day move
+        if f5d > 1.0:
+            ftse_score += 0.5
         elif f5d < -1.0:
-            ftse_score -= 1
+            ftse_score -= 0.5
+
+        # 20-day move (trend)
         if f20d > 3.0:
             ftse_score += 1
         elif f20d < -3.0:
             ftse_score -= 1
 
-        regime_score = vix_score + ftse_score  # -3 to +3
+        regime_score = vix_score + ftse_score  # -4 to +3
 
-        if regime_score >= 1:
+        # More aggressive BEARISH detection (regime_score <= -1.5)
+        if regime_score >= 1.5:
             regime = "BULLISH"
-        elif regime_score <= -1:
+        elif regime_score <= -1.5:
             regime = "BEARISH"
         else:
             regime = "NEUTRAL"
