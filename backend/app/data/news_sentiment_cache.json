@@ -1,29 +1,29 @@
 {
   "BUT.L": {
-    "score": -0.7046,
+    "score": -0.1622,
     "label": "negative",
-    "count": 17,
+    "count": 21,
     "headlines": [
+      "Could humanoid robots be heading for the battlefield?",
       "Cake sheds are making bakers \u00a31,000 a week - but the dream might be over",
-      "China cracks down on soft porn, violence and materialism in viral micro dramas",
-      "Mark Zuckerberg's longest-serving employee on AI, jobs - and her boss",
       "How 'confused' AI rollout hurts firms and baffles staff",
-      "The rise of the fruit that tastes like custard"
+      "The rise of the fruit that tastes like custard",
+      "Robo-top: The machines that could make your next t-shirt"
     ],
-    "updated": "2026-06-08"
+    "updated": "2026-06-09"
   },
   "COST.L": {
-    "score": -0.8869,
+    "score": -0.8626,
     "label": "negative",
-    "count": 5,
+    "count": 6,
     "headlines": [
       "'Six eggs used to be \u00a31' - why everyday essentials cost so much more now",
+      "Gabriel Raimondo, 18, wins deputy seat in election",
       "Advice service demand rises amid housing crisis",
       "The \u00a35 coffee that tells a story of global economic turmoil",
-      "UK companies opting to hire temporary workers over permanent staff, recruitment firms say",
-      "Food inflation: First signs of energy cost surge feed through to supermarket shelves as discounts fail to stem price growth"
+      "UK companies opting to hire temporary workers over permanent staff, recruitment firms say"
     ],
-    "updated": "2026-06-08"
+    "updated": "2026-06-09"
   },
   "DOM.L": {
     "score": -0.965,
@@ -51,7 +51,7 @@
     "headlines": [
       "I was applying for hundreds of jobs - this tip helped me get one"
     ],
-    "updated": "2026-06-08"
+    "updated": "2026-06-09"
   },
   "GEN.L": {
     "score": 0.0,
@@ -60,20 +60,20 @@
     "headlines": [
       "The \u00a35 coffee that tells a story of global economic turmoil"
     ],
-    "updated": "2026-06-08"
+    "updated": "2026-06-09"
   },
   "HAS.L": {
-    "score": -0.0534,
-    "label": "neutral",
-    "count": 27,
+    "score": 0.1962,
+    "label": "positive",
+    "count": 34,
     "headlines": [
+      "Russia's fuel crisis intensifies as Ukraine steps up strikes on occupied territories",
       "'No dead ends': What the Dutch can teach us about tackling youth unemployment",
-      "Final pieces fired at Denby as production ends",
-      "Mark Zuckerberg's longest-serving employee on AI, jobs - and her boss",
-      "Who is Elon Musk and what is his net worth?",
-      "Love factually: Dating start-ups promise to cut the cheats"
+      "Love factually: Dating start-ups promise to cut the cheats",
+      "Rise in solar panel sales as people 'want to save money'",
+      "Nationwide nearly doubles CEO\u2019s pay packet to \u00a34.7m despite bonus row"
     ],
-    "updated": "2026-06-08"
+    "updated": "2026-06-09"
   },
   "INF.L": {
     "score": 0.0,
@@ -82,7 +82,7 @@
     "headlines": [
       "Britain is a swamp of lies and disinformation \u2013 and we got here on the Brexit bus | Jonathan Freedland"
     ],
-    "updated": "2026-06-08"
+    "updated": "2026-06-09"
   },
   "PINT.L": {
     "score": -0.7109,
@@ -98,9 +98,9 @@
     "label": "neutral",
     "count": 1,
     "headlines": [
-      "North Highland Names Anthony Shaw Global Chief Executive Officer"
+      "London Tech Week day one: AI talk has come back down to earth"
     ],
-    "updated": "2026-06-02"
+    "updated": "2026-06-09"
   },
   "SVS.L": {
     "score": -0.9677,
@@ -130,22 +130,24 @@
     "updated": "2026-06-08"
   },
   "IPO.L": {
-    "score": 0.0,
-    "label": "neutral",
-    "count": 1,
+    "score": 0.4831,
+    "label": "positive",
+    "count": 3,
     "headlines": [
-      "SpaceX IPO: how can I buy shares, and what are the risks?"
+      "Chip stocks bounce back as OpenAI files for Wall Street float \u2013 business live",
+      "SpaceX IPO: how can I buy shares, and what are the risks?",
+      "OpenAI files to go public as the race between tech giants heats up"
     ],
-    "updated": "2026-06-08"
+    "updated": "2026-06-09"
   },
   "SNR.L": {
-    "score": -0.7299,
+    "score": -0.9416,
     "label": "negative",
     "count": 1,
     "headlines": [
-      "SpaceX aims for world\u2019s largest IPO amid fears it is \u2018significantly overvalued\u2019 \u2013 business live"
+      "City watchdog sues Neil Woodford for allegedly offering unauthorised investment advice"
     ],
-    "updated": "2026-06-04"
+    "updated": "2026-06-09"
   },
   "BA.L": {
     "score": -0.0974,
@@ -187,21 +189,20 @@
   "BAG.L": {
     "score": -0.4921,
     "label": "negative",
-    "count": 2,
-    "headlines": [
-      "Horrific, unregulated, and very profitable. The companies making cash from England\u2019s children in care | George Monbiot",
-      "\u2018Poisoned\u2019 AI: the ChatGPT shopping scams that lead to fake websites"
-    ],
-    "updated": "2026-06-08"
-  },
-  "BARC.L": {
-    "score": 0.0,
-    "label": "neutral",
     "count": 1,
     "headlines": [
-      "KBRA Assigns Preliminary Ratings to UK Logistics 2026-2 DAC"
+      "\u2018Poisoned\u2019 AI: the ChatGPT shopping scams that lead to fake websites"
     ],
-    "updated": "2026-06-04"
+    "updated": "2026-06-09"
+  },
+  "BARC.L": {
+    "score": 0.911,
+    "label": "positive",
+    "count": 1,
+    "headlines": [
+      "Soaring petrol prices and Devil Wears Prada 2 help consumer spending return to growth"
+    ],
+    "updated": "2026-06-09"
   },
   "CCC.L": {
     "score": 0.0,
@@ -213,13 +214,14 @@
     "updated": "2026-06-04"
   },
   "HTG.L": {
-    "score": 0.0,
-    "label": "neutral",
-    "count": 1,
+    "score": 0.949,
+    "label": "positive",
+    "count": 2,
     "headlines": [
-      "'By the grace of God': Miners dig on as lab-grown diamonds change market"
+      "'By the grace of God': Miners dig on as lab-grown diamonds change market",
+      "Pilot \u2018hyperlocal\u2019 job support scheme in England shows promising signs of effectiveness"
     ],
-    "updated": "2026-06-08"
+    "updated": "2026-06-09"
   },
   "INVP.L": {
     "score": 0.0,
@@ -283,16 +285,17 @@
     "headlines": [
       "Aviation industry looks skywards as leaders fly in for Rio summit"
     ],
-    "updated": "2026-06-08"
+    "updated": "2026-06-09"
   },
   "TATE.L": {
-    "score": 0.0,
+    "score": -0.0192,
     "label": "neutral",
-    "count": 1,
+    "count": 2,
     "headlines": [
-      "Tate & Lyle confirms \u00a32.7bn takeover by US rival"
+      "Tate & Lyle agrees \u00a32.7bn takeover by US rival in new blow to London market",
+      "Tate & Lyle becomes latest market stalwart to quit London"
     ],
-    "updated": "2026-06-08"
+    "updated": "2026-06-09"
   },
   "TSCO.L": {
     "score": -0.9354,
@@ -302,5 +305,50 @@
       "Food inflation: First signs of energy cost surge feed through to supermarket shelves as discounts fail to stem price growth"
     ],
     "updated": "2026-06-08"
+  },
+  "BWY.L": {
+    "score": -0.9555,
+    "label": "negative",
+    "count": 1,
+    "headlines": [
+      "Housebuilder Bellway warns mortgage rate hikes dampening housing demand"
+    ],
+    "updated": "2026-06-09"
+  },
+  "FAN.L": {
+    "score": 0.0,
+    "label": "neutral",
+    "count": 1,
+    "headlines": [
+      "England World Cup fans invited to \u2018soccer Coachella\u2019 with free fan fest and cheap beer"
+    ],
+    "updated": "2026-06-09"
+  },
+  "GSK.L": {
+    "score": 0.0,
+    "label": "neutral",
+    "count": 1,
+    "headlines": [
+      "GSK snaps up US cancer treatment firm Nuvalent in $10.6bn deal"
+    ],
+    "updated": "2026-06-09"
+  },
+  "LAND.L": {
+    "score": 0.0,
+    "label": "neutral",
+    "count": 1,
+    "headlines": [
+      "World\u2019s first wind-powered underwater datacentre starts operating in China"
+    ],
+    "updated": "2026-06-09"
+  },
+  "TRY.L": {
+    "score": 0.0,
+    "label": "neutral",
+    "count": 1,
+    "headlines": [
+      "Uber and Wayve open waitlist for London robotaxis"
+    ],
+    "updated": "2026-06-09"
   }
 }

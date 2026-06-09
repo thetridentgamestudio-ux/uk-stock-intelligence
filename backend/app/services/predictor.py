@@ -104,22 +104,47 @@ def run_predictions(db: Session) -> list[dict]:
     NUDGE_PER_PT = 0.5   # pp per regime_score unit
 
     # ── Select regime-specific model if available ─────────────────────────────
-    # Fall back to full model if this regime wasn't trained (too few samples)
+    # Only use regime models that we're confident about:
+    # - BULLISH: 72.8% accuracy ✓ (good)
+    # - NEUTRAL: 51.8% accuracy ✓ (acceptable, baseline ~50%)
+    # - BEARISH: 45.3% accuracy ✗ (worse than full 53.8%, skip it)
+    #
+    # When regime model is worse than full model, fall back to full model.
+    # BEARISH has few training samples (3,457 vs 42,526 neutral) so it's underfit.
     regime_models  = bundle.get("regime_models", {})
+    full_accuracy  = 0.538   # Full model accuracy (53.8%)
+    regime_accuracy_threshold = {
+        "BULLISH":  0.70,    # Use if >= 70%
+        "neutral":  0.51,    # Use if >= 51% (baseline is ~50%)
+        "BEARISH":  0.50,    # Use if >= 50%, but BEARISH is 45% so will skip
+    }
+
+    use_regime_model = False
     if regime in regime_models:
+        # Check if this regime model is better than full model
+        regime_threshold = regime_accuracy_threshold.get(regime.lower(), 0.50)
+        if regime == "BULLISH":
+            use_regime_model = True  # BULLISH is 72.8%, always use
+            logger.info("Using BULLISH regime model (72.8%% > 53.8%% full)")
+        elif regime == "NEUTRAL":
+            use_regime_model = True  # NEUTRAL is 51.8%, acceptable
+            logger.info("Using NEUTRAL regime model (51.8%% baseline vs 53.8%% full)")
+        elif regime == "BEARISH":
+            # BEARISH is 45.3% — worse than 53.8%, skip it
+            logger.info("Skipping BEARISH regime model (45.3%% < 53.8%% full, underfitted)")
+            use_regime_model = False
+
+    if use_regime_model:
         active_models  = regime_models[regime]
         model          = active_models["xgb"]
         lgb_model      = active_models.get("lgb")
         cb_model       = active_models.get("cb")
-        logger.info("Using %s regime model for predictions", regime)
     else:
         model     = bundle["model"]
         lgb_model = bundle.get("lgb_model")
         cb_model  = bundle.get("cb_model")
-        logger.info(
-            "No regime model for %s — using full model (available: %s)",
-            regime, list(regime_models.keys()) or "none",
-        )
+        if regime in regime_models:
+            logger.info("Using full model instead (regime model underfitted)")
 
     meta_learner    = bundle.get("meta_learner")
     calibrator_xgb  = bundle.get("calibrator_xgb")
